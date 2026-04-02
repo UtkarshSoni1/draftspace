@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Toolbar from '@/components/Toolbar';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import { CommandInput } from '@/components/CommandInput';
 
 export default function Home() {
   const [undoCount, setUndoCount] = useState(0);
@@ -50,8 +51,17 @@ export default function Home() {
     console.log('Dark mode toggled:', enabled);
   };
 
+  const handleCommandSubmit = (command: string) => {
+    console.log('Command submitted:', command);
+  };
+
+  const handlePatternDetected = (pattern: 'ai' | 'img' | 'code', value: string) => {
+    console.log(`Pattern detected: ${pattern}`, value);
+  };
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-slate-50 to-slate-100'}`}>
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
         <h1 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           Whiteboard App
@@ -64,6 +74,7 @@ export default function Home() {
         />
       </div>
 
+      {/* Toolbar */}
       <div className="bg-white border-b border-slate-200">
         <Toolbar
           onToolChange={handleToolChange}
@@ -78,6 +89,7 @@ export default function Home() {
         />
       </div>
 
+      {/* Canvas Area */}
       <div className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
           <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} rounded-lg shadow-lg border aspect-video flex items-center justify-center`}>
@@ -97,6 +109,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Command Input */}
+      <CommandInput
+        onSubmit={handleCommandSubmit}
+        onPatternDetected={handlePatternDetected}
+      />
     </div>
   );
 }
