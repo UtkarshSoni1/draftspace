@@ -52,43 +52,39 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-slate-50 to-slate-100'}`}>
-      {/* Top Bar with Toolbar and Settings */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-        <div>
-          <h1 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Whiteboard App
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <SettingsPanel
-            onAIProviderChange={handleAIProviderChange}
-            onDarkModeToggle={handleDarkModeToggle}
-            roomId="ROOM-ABC123"
-            onlineUsers={5}
-          />
-        </div>
+        <h1 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          Whiteboard App
+        </h1>
+        <SettingsPanel
+          onAIProviderChange={handleAIProviderChange}
+          onDarkModeToggle={handleDarkModeToggle}
+          roomId="ROOM-ABC123"
+          onlineUsers={5}
+        />
       </div>
 
-      {/* Toolbar */}
       <div className="bg-white border-b border-slate-200">
         <Toolbar
-        onToolChange={handleToolChange}
-        onColorChange={handleColorChange}
-        onStrokeWidthChange={handleStrokeWidthChange}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onExport={handleExport}
-        onClear={handleClear}
-        canUndo={undoCount > 0}
-        canRedo={true}
-      />
+          onToolChange={handleToolChange}
+          onColorChange={handleColorChange}
+          onStrokeWidthChange={handleStrokeWidthChange}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onExport={handleExport}
+          onClear={handleClear}
+          canUndo={undoCount > 0}
+          canRedo={true}
+        />
+      </div>
 
-      {/* Canvas Area */}
       <div className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
           <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} rounded-lg shadow-lg border aspect-video flex items-center justify-center`}>
             <div className="text-center">
-              <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Canvas Area</p>
+              <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                Canvas Area
+              </p>
               <p className={`text-sm mt-2 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`}>
                 Click the toolbar buttons to interact with drawing tools
               </p>
