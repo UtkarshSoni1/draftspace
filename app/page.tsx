@@ -4,8 +4,11 @@ import { useState } from 'react';
 import Toolbar from '@/components/Toolbar';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { CommandInput } from '@/components/CommandInput';
+import { useToast } from '@/context/ToastContext';
+import ToastContainer from '@/components/ToastNotification';
 
 export default function Home() {
+  const { addToast } = useToast();
   const [undoCount, setUndoCount] = useState(0);
   const [redoCount, setRedoCount] = useState(0);
   const [aiProvider, setAIProvider] = useState<'openai' | 'anthropic'>('openai');
@@ -59,6 +62,42 @@ export default function Home() {
     console.log(`Pattern detected: ${pattern}`, value);
   };
 
+  const demoToastProcessing = () => {
+    const toastId = addToast({
+      type: 'processing',
+      message: 'Generating image...',
+      description: 'Your AI image is being created',
+    });
+
+    setTimeout(() => {
+      // Toast is removed after 4 seconds automatically
+    }, 5000);
+  };
+
+  const demoToastSuccess = () => {
+    addToast({
+      type: 'success',
+      message: 'Success!',
+      description: 'Your image has been generated',
+    });
+  };
+
+  const demoToastError = () => {
+    addToast({
+      type: 'error',
+      message: 'Error occurred',
+      description: 'Failed to generate image. Please try again.',
+    });
+  };
+
+  const demoToastCopy = () => {
+    addToast({
+      type: 'copy',
+      message: 'Copied to clipboard!',
+      duration: 2000,
+    });
+  };
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-slate-50 to-slate-100'}`}>
       {/* Header */}
@@ -100,15 +139,46 @@ export default function Home() {
               <p className={`text-sm mt-2 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`}>
                 Click the toolbar buttons to interact with drawing tools
               </p>
-              <div className={`mt-4 space-y-1 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`mt-6 space-y-2 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 <p>Undo actions: {undoCount}</p>
                 <p>Redo actions: {redoCount}</p>
                 <p>Current AI Provider: {aiProvider}</p>
+              </div>
+
+              {/* Toast Demo Buttons */}
+              <div className="mt-8 flex gap-2 justify-center flex-wrap">
+                <button
+                  onClick={demoToastProcessing}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                >
+                  Processing Toast
+                </button>
+                <button
+                  onClick={demoToastSuccess}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+                >
+                  Success Toast
+                </button>
+                <button
+                  onClick={demoToastError}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                >
+                  Error Toast
+                </button>
+                <button
+                  onClick={demoToastCopy}
+                  className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-700 transition-colors"
+                >
+                  Copy Toast
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer />
 
       {/* Command Input */}
       <CommandInput
