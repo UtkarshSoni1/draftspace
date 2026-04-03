@@ -176,17 +176,72 @@ export default function Home() {
     });
   }, []);
 
-  const handleUndo = () => setUndoCount((c) => c + 1);
-  const handleRedo = () => setRedoCount((c) => c + 1);
+  const handleUndo = () => {
+    if (excalidrawAPI?.undo) {
+      excalidrawAPI.undo();
+      setUndoCount((c) => Math.max(0, c - 1));
+    }
+  };
+
+  const handleRedo = () => {
+    if (excalidrawAPI?.redo) {
+      excalidrawAPI.redo();
+      setRedoCount((c) => c + 1);
+    }
+  };
 
   const handleExport = (format: 'png' | 'svg' | 'json') => {
+    if (!excalidrawAPI) return;
+    
+    const exportFunc = excalidrawAPI[format === 'png' ? 'exportToPng' : format === 'svg' ? 'exportToSvg' : 'exportToJson'];
+    if (exportFunc) {
+      try {
+        const elements = excalidrawAPI.getSceneElements?.();
+        const appState = excalidrawAPI.getAppState?.();
+        
+        if (format === 'json') {
+          const data = {
+            elements: elements || [],
+            appState: appState || {},
+          };
+          const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `drawing-${Date.now()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else if (format === 'png') {
+          excalidrawAPI.exportToPng?.({
+            elements: elements || [],
+            appState: appState || {},
+            name: `drawing-${Date.now()}`,
+          });
+        } else if (format === 'svg') {
+          excalidrawAPI.exportToSvg?.({
+            elements: elements || [],
+            appState: appState || {},
+            name: `drawing-${Date.now()}`,
+          });
+        }
+      } catch (e) {
+        console.error('Export failed:', e);
+      }
+    }
     console.log('Exporting as:', format);
   };
 
   const handleClear = () => {
-    setUndoCount(0);
-    setRedoCount(0);
-    setSelectedElement(null);
+    if (excalidrawAPI?.updateScene) {
+      excalidrawAPI.updateScene({
+        elements: [],
+        appState: {},
+        storeAction: 'capture',
+      });
+      setUndoCount(0);
+      setRedoCount(0);
+      setSelectedElement(null);
+    }
   };
 
   const handlePropertyChange = useCallback(
