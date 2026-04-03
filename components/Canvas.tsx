@@ -80,10 +80,20 @@ export function Canvas({
         <Excalidraw
           onChange={handleChange}
           excalidrawAPI={handleExcalidrawAPI}
+          readOnly={false}
           viewModeEnabled={false}
           zenModeEnabled={false}
           gridModeEnabled={gridEnabled}
           theme={darkMode ? 'dark' : 'light'}
+          initialData={{
+            appState: {
+              activeTool: {
+                type: activeTool === 'pen' ? 'freedraw' : activeTool === 'select' ? 'selection' : activeTool,
+              },
+              currentItemStrokeColor: strokeColor,
+              currentItemStrokeWidth: strokeWidth,
+            },
+          }}
         />
       </div>
     </div>
