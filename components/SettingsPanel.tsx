@@ -38,49 +38,57 @@ import { Slider } from '@/components/ui/slider';
 export type AIProvider = 'openai' | 'anthropic';
 
 export interface SettingsPanelProps {
-  onAIProviderChange?: (provider: AIProvider) => void;
-  onAPIKeyChange?: (key: string) => void;
-  onGridToggle?: (enabled: boolean) => void;
-  onSnapToGrid?: (enabled: boolean) => void;
-  onDarkModeToggle?: (enabled: boolean) => void;
-  onExportBackgroundToggle?: (enabled: boolean) => void;
-  onExportScaleChange?: (scale: number) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  aiProvider: AIProvider;
+  onAIProviderChange: (provider: AIProvider) => void;
+  apiKey: string;
+  onAPIKeyChange: (key: string) => void;
+  gridEnabled: boolean;
+  onGridToggle: (enabled: boolean) => void;
+  snapToGridEnabled: boolean;
+  onSnapToGrid: (enabled: boolean) => void;
+  darkModeEnabled: boolean;
+  onDarkModeToggle: (enabled: boolean) => void;
+  exportBackgroundEnabled: boolean;
+  onExportBackgroundToggle: (enabled: boolean) => void;
+  exportScale: number;
+  onExportScaleChange: (scale: number) => void;
   roomId?: string;
   onlineUsers?: number;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  open,
+  onOpenChange,
+  aiProvider,
   onAIProviderChange,
+  apiKey,
   onAPIKeyChange,
+  gridEnabled,
   onGridToggle,
+  snapToGridEnabled,
   onSnapToGrid,
+  darkModeEnabled,
   onDarkModeToggle,
+  exportBackgroundEnabled,
   onExportBackgroundToggle,
+  exportScale,
   onExportScaleChange,
   roomId = 'ROOM-12345',
   onlineUsers = 3,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [aiProvider, setAIProvider] = useState<AIProvider>('openai');
-  const [apiKey, setApiKey] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [gridEnabled, setGridEnabled] = useState(false);
-  const [snapToGridEnabled, setSnapToGridEnabled] = useState(false);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [exportBackgroundEnabled, setExportBackgroundEnabled] = useState(true);
-  const [exportScale, setExportScale] = useState([1]);
   const [apiKeyError, setApiKeyError] = useState('');
   const [copiedRoomId, setCopiedRoomId] = useState(false);
 
   const handleAIProviderChange = (value: AIProvider) => {
-    setAIProvider(value);
-    onAIProviderChange?.(value);
+    onAIProviderChange(value);
   };
 
   const handleAPIKeyChange = (value: string) => {
-    setApiKey(value);
+    onAPIKeyChange(value);
     setApiKeyError('');
-    onAPIKeyChange?.(value);
   };
 
   const validateAPIKey = (): boolean => {
@@ -97,28 +105,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   };
 
   const handleGridToggle = (checked: boolean) => {
-    setGridEnabled(checked);
-    onGridToggle?.(checked);
+    onGridToggle(checked);
   };
 
   const handleSnapToGrid = (checked: boolean) => {
-    setSnapToGridEnabled(checked);
-    onSnapToGrid?.(checked);
+    onSnapToGrid(checked);
   };
 
   const handleDarkModeToggle = (checked: boolean) => {
-    setDarkModeEnabled(checked);
-    onDarkModeToggle?.(checked);
+    onDarkModeToggle(checked);
   };
 
   const handleExportBackgroundToggle = (checked: boolean) => {
-    setExportBackgroundEnabled(checked);
-    onExportBackgroundToggle?.(checked);
+    onExportBackgroundToggle(checked);
   };
 
   const handleExportScaleChange = (value: number[]) => {
-    setExportScale(value);
-    onExportScaleChange?.(value[0]);
+    onExportScaleChange(value[0] ?? 1);
   };
 
   const copyRoomIdToClipboard = () => {
@@ -129,14 +132,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   return (
     <TooltipProvider>
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetTrigger asChild>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-md hover:bg-gray-100"
+                className="h-10 w-10 shrink-0 rounded-md hover:bg-gray-100 transition-transform duration-200 hover:scale-105"
+                aria-label="Open settings"
               >
                 <Settings className="h-5 w-5" />
               </Button>
@@ -145,7 +149,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </Tooltip>
         </SheetTrigger>
 
-        <SheetContent side="right" className="w-full sm:w-96 overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-full sm:w-96 overflow-y-auto transition-transform duration-300 ease-out"
+        >
           <SheetHeader className="mb-6">
             <SheetTitle>Settings</SheetTitle>
             <SheetDescription>
@@ -154,13 +161,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </SheetHeader>
 
           <div className="space-y-8">
-            {/* AI Provider Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Settings className="h-4 w-4 text-gray-600" />
                 <h3 className="font-semibold text-sm">AI Provider</h3>
               </div>
-              <RadioGroup value={aiProvider} onValueChange={(value) => handleAIProviderChange(value as AIProvider)}>
+              <RadioGroup
+                value={aiProvider}
+                onValueChange={(value) =>
+                  handleAIProviderChange(value as AIProvider)
+                }
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="openai" id="openai" />
                   <Label htmlFor="openai" className="cursor-pointer font-normal">
@@ -176,7 +187,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </RadioGroup>
             </div>
 
-            {/* API Key Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Settings className="h-4 w-4 text-gray-600" />
@@ -218,7 +228,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             </div>
 
-            {/* Canvas Settings Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Grid3x3 className="h-4 w-4 text-gray-600" />
@@ -261,7 +270,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             </div>
 
-            {/* Collaboration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-gray-600" />
@@ -302,7 +310,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             </div>
 
-            {/* Export Settings Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Download className="h-4 w-4 text-gray-600" />
@@ -322,11 +329,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-normal">
-                      Scale: {exportScale[0]}x
+                      Scale: {exportScale}x
                     </Label>
                   </div>
                   <Slider
-                    value={exportScale}
+                    value={[exportScale]}
                     onValueChange={handleExportScaleChange}
                     min={1}
                     max={4}

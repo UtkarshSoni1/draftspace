@@ -25,32 +25,32 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random()}`;
-    const newToast: Toast = {
-      ...toast,
-      id,
-      duration: toast.duration ?? 4000,
-      progress: 100,
-    };
-
-    setToasts((prev) => [...prev, newToast]);
-
-    // Auto-dismiss
-    if (toast.type !== 'processing') {
-      const timer = setTimeout(() => {
-        removeToast(id);
-      }, newToast.duration);
-
-      return id;
-    }
-
-    return id;
-  }, []);
-
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
+
+  const addToast = useCallback(
+    (toast: Omit<Toast, 'id'>) => {
+      const id = `toast-${Date.now()}-${Math.random()}`;
+      const newToast: Toast = {
+        ...toast,
+        id,
+        duration: toast.duration ?? 4000,
+        progress: 100,
+      };
+
+      setToasts((prev) => [...prev, newToast]);
+
+      if (toast.type !== 'processing') {
+        setTimeout(() => {
+          removeToast(id);
+        }, newToast.duration);
+      }
+
+      return id;
+    },
+    [removeToast]
+  );
 
   const updateToast = useCallback((id: string, updates: Partial<Toast>) => {
     setToasts((prev) =>

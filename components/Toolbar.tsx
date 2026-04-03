@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Pen,
   Eraser,
@@ -13,7 +13,6 @@ import {
   Redo2,
   Download,
   Trash2,
-  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,6 +46,9 @@ export interface ToolbarState {
 }
 
 export interface ToolbarProps {
+  activeTool: ToolType;
+  color: string;
+  strokeWidth: number;
   onToolChange?: (tool: ToolType) => void;
   onColorChange?: (color: string) => void;
   onStrokeWidthChange?: (width: number) => void;
@@ -78,6 +80,9 @@ const TOOLS: { type: ToolType; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function Toolbar({
+  activeTool,
+  color: selectedColor,
+  strokeWidth,
   onToolChange,
   onColorChange,
   onStrokeWidthChange,
@@ -88,23 +93,16 @@ export function Toolbar({
   canUndo = true,
   canRedo = true,
 }: ToolbarProps) {
-  const [activeTool, setActiveTool] = useState<ToolType>('pen');
-  const [selectedColor, setSelectedColor] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(2);
-
   const handleToolChange = (tool: ToolType) => {
-    setActiveTool(tool);
     onToolChange?.(tool);
   };
 
   const handleColorChange = (color: string) => {
-    setSelectedColor(color);
     onColorChange?.(color);
   };
 
   const handleStrokeWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const width = parseInt(e.target.value, 10);
-    setStrokeWidth(width);
     onStrokeWidthChange?.(width);
   };
 

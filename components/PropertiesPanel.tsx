@@ -80,13 +80,7 @@ export default function PropertiesPanel({
   const [aspectRatioLocked, setAspectRatioLocked] = useState(true);
 
   if (!selectedElement) {
-    return (
-      <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-slate-200 shadow-lg p-6 flex items-center justify-center">
-        <p className="text-center text-slate-500 text-sm">
-          Select an element on the canvas to view and edit its properties
-        </p>
-      </div>
-    );
+    return null;
   }
 
   const toggleSection = (section: string) => {
@@ -106,12 +100,19 @@ export default function PropertiesPanel({
   const filters = ['None', 'Grayscale', 'Blur', 'Brightness'];
   const alignments = ['Left', 'Center', 'Right'];
 
+  const typeLabel = selectedElement.type
+    ? selectedElement.type.charAt(0).toUpperCase() +
+      selectedElement.type.slice(1)
+    : 'Element';
+
   return (
-    <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-slate-200 shadow-lg overflow-y-auto">
+    <div
+      className="fixed right-0 top-14 z-30 h-[calc(100vh-3.5rem)] w-80 bg-white border-l border-slate-200 shadow-lg overflow-y-auto transition-all duration-300 ease-out animate-in slide-in-from-right fade-in"
+    >
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-slate-200 p-4">
+      <div className="sticky top-0 bg-white border-b border-slate-200 p-4 z-10">
         <h2 className="text-lg font-semibold text-slate-900">
-          {selectedElement.type?.charAt(0).toUpperCase() + selectedElement.type?.slice(1)} Properties
+          {typeLabel} Properties
         </h2>
         <p className="text-xs text-slate-500 mt-1">ID: {selectedElement.id}</p>
       </div>
