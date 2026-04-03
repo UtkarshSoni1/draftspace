@@ -13,8 +13,6 @@ export interface Toast {
   progress?: number;
 }
 
-export { Toast };
-
 interface ToastContextType {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => string;
@@ -42,13 +40,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
     setToasts((prev) => [...prev, newToast]);
 
-    // Auto-dismiss
+    // Auto-dismiss after duration (except for processing toasts)
     if (toast.type !== 'processing') {
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         removeToast(id);
       }, newToast.duration);
-
-      return id;
     }
 
     return id;
@@ -62,8 +58,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const value: ToastContextType = { toasts, addToast, removeToast, updateToast };
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast, updateToast }}>
+    <ToastContext.Provider value={value}>
       {children}
     </ToastContext.Provider>
   );
