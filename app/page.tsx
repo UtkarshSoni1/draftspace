@@ -12,9 +12,9 @@ export default function Home() {
   const [redoCount, setRedoCount] = useState(0);
   const [aiProvider, setAIProvider] = useState<'openai' | 'anthropic'>('openai');
   const [darkMode, setDarkMode] = useState(false);
-  const [selectedElement, setSelectedElement] = useState({
+  const [selectedElement, setSelectedElement] = useState<any>({
     id: 'element-1',
-    type: 'shape' as const,
+    type: 'shape',
     x: 100,
     y: 100,
     width: 200,

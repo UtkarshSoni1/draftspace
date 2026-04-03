@@ -77,7 +77,7 @@ const TOOLS: { type: ToolType; label: string; icon: React.ReactNode }[] = [
   { type: 'text', label: 'Text', icon: <Type className="w-4 h-4" /> },
 ];
 
-export function Toolbar({
+function Toolbar({
   onToolChange,
   onColorChange,
   onStrokeWidthChange,
