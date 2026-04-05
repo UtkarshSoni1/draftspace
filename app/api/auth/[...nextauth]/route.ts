@@ -40,33 +40,37 @@ export const authOptions = {
         };
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      async profile(profile) {
-        await connectToDatabase();
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            async profile(profile) {
+              await connectToDatabase();
 
-        // Upsert user in MongoDB
-        let user = await User.findOne({
-          email: profile.email?.toLowerCase(),
-        });
+              // Upsert user in MongoDB
+              let user = await User.findOne({
+                email: profile.email?.toLowerCase(),
+              });
 
-        if (!user) {
-          user = await User.create({
-            email: profile.email?.toLowerCase(),
-            name: profile.name || 'User',
-            // No password for Google-only users
-          });
-        }
+              if (!user) {
+                user = await User.create({
+                  email: profile.email?.toLowerCase(),
+                  name: profile.name || 'User',
+                  // No password for Google-only users
+                });
+              }
 
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          image: profile.picture,
-        };
-      },
-    }),
+              return {
+                id: user._id.toString(),
+                email: user.email,
+                name: user.name,
+                image: profile.picture,
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   session: {
     strategy: 'jwt',
