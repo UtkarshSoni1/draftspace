@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Toolbar, { type ToolType } from '@/components/Toolbar';
 import { SettingsPanel, type AIProvider } from '@/components/SettingsPanel';
 import { CommandInput } from '@/components/CommandInput';
 import ToastContainer from '@/components/ToastNotification';
@@ -313,25 +312,8 @@ export default function Home() {
           : 'bg-linear-to-br from-slate-50 to-slate-100 text-slate-900'
       }`}
     >
-      {/* Fixed toolbar row */}
-      <header className="fixed top-0 left-0 right-0 z-40 flex items-stretch gap-2 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300 ease-out dark:bg-slate-900/95 dark:border-slate-700">
-        <div className="flex-1 min-w-0">
-          <Toolbar
-            activeTool={activeTool}
-            color={strokeColor}
-            strokeWidth={strokeWidth}
-            onToolChange={handleToolChange}
-            onColorChange={handleColorChange}
-            onStrokeWidthChange={handleStrokeWidthChange}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            onExport={handleExport}
-            onClear={handleClear}
-            canUndo={undoCount > 0}
-            canRedo={redoCount > 0}
-          />
-        </div>
-        <div className="flex items-center pr-2 shrink-0">
+      <div className="flex-1 min-h-0 relative w-full h-full flex items-center justify-between">
+        <div className="absolute top-4 right-4 z-40">
           <SettingsPanel
             open={settingsOpen}
             onOpenChange={setSettingsOpen}
@@ -353,10 +335,6 @@ export default function Home() {
             onlineUsers={5}
           />
         </div>
-      </header>
-
-      {/* Main: canvas fills space below toolbar */}
-      <div className="flex-1 min-h-0 relative w-full h-full" style={{ marginTop: '56px' }}>
         <Canvas
           gridEnabled={gridEnabled}
           snapToGridEnabled={snapToGridEnabled}
