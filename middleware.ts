@@ -1,42 +1,37 @@
+import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from '@/lib/jwt';
 
-// Routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/api/auth'];
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const pathname = request.nextUrl.pathname;
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  // "/" is always public
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
 
-  // Check if it's a public route
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  if (isPublicRoute) {
-    // If user is already logged in and trying to access login/signup, redirect to home
-    const token = request.cookies.get('auth-token')?.value;
-    if (token && (pathname === '/login' || pathname === '/signup')) {
+  // /login and /signup are public
+  if (pathname === '/login' || pathname === '/signup') {
+    // Redirect to "/" if user is already authenticated
+    if (token) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return NextResponse.next();
   }
 
-  // For protected routes, check authentication
-  const token = request.cookies.get('auth-token')?.value;
-
-  if (!token) {
-    // No token, redirect to login
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Protected routes: /collaboration/*, /live/*, /room/*
+  if (pathname.startsWith('/collaboration') || pathname.startsWith('/live') || pathname.startsWith('/room')) {
+    if (!token) {
+      const callbackUrl = encodeURIComponent(pathname + request.nextUrl.search);
+      return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, request.url));
+    }
+    return NextResponse.next();
   }
 
-  // Verify token
-  const verified = jwtVerify(token);
-  if (!verified) {
-    // Invalid token, redirect to login
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
+  // All other routes are public by default
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
