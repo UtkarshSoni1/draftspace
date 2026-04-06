@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, Image, Code, ChevronRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Sparkles, Image, Code, ArrowRight } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import {
   streamTextAi,
@@ -21,74 +15,41 @@ import {
   addAICodeToCanvas,
 } from '@/lib/canvasManager';
 
-// Command history management
-const HISTORY_STORAGE_KEY = 'draftspace-command-history';
-const MAX_HISTORY = 10;
-
-function loadHistory(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(commands: string[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(commands.slice(0, MAX_HISTORY)));
-  } catch {
-    // Silently fail if localStorage is unavailable
-  }
-}
-
-function addToHistory(command: string): void {
-  const history = loadHistory();
-  const filtered = history.filter((c) => c !== command);
-  saveHistory([command, ...filtered]);
-}
-
-interface AutocompleteItem {
-  label: string;
-  description: string;
-  shortcut?: string;
-  icon: React.ReactNode;
-}
-
 interface CommandInputProps {
   onSubmit?: (command: string) => void | Promise<void>;
   onPatternDetected?: (pattern: 'ai' | 'img' | 'code', value: string) => void;
   excalidrawAPI?: ExcalidrawImperativeAPI;
 }
 
-const PLACEHOLDER_EXAMPLES = [
-  'Type "{ ai: }" to use AI assistant...',
-  'Type "{ img: }" to generate images...',
-  'Type "{ code: }" to write code...',
-  'Press "/" for quick commands...',
-  'Ctrl+K to focus, ↑ for history...',
-];
+interface CommandOption {
+  type: 'ai' | 'img' | 'code';
+  prefix: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}
 
-const AUTOCOMPLETE_ITEMS: AutocompleteItem[] = [
+const COMMAND_OPTIONS: CommandOption[] = [
   {
+    type: 'ai',
+    prefix: '{ ai: ',
     label: 'AI Assistant',
     description: 'Ask AI for help with any task',
-    shortcut: 'Ctrl+Shift+A',
-    icon: <Sparkles className="w-4 h-4" />,
+    icon: <Sparkles className="w-5 h-5" />,
   },
   {
+    type: 'img',
+    prefix: '{ img: ',
     label: 'Generate Image',
     description: 'Create images with AI',
-    shortcut: 'Ctrl+Shift+I',
-    icon: <Image className="w-4 h-4" />,
+    icon: <Image className="w-5 h-5" />,
   },
   {
+    type: 'code',
+    prefix: '{ code: ',
     label: 'Write Code',
     description: 'Generate code snippets',
-    shortcut: 'Ctrl+Shift+C',
-    icon: <Code className="w-4 h-4" />,
+    icon: <Code className="w-5 h-5" />,
   },
 ];
 
@@ -108,30 +69,21 @@ function parseCommand(input: string): ParsedCommand {
   return { kind, prompt };
 }
 
-export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: CommandInputProps) {
+export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
   const { addToast, removeToast } = useToast();
   const [input, setInput] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+  const [showPopover, setShowPopover] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  // Load history on mount
-  useEffect(() => {
-    setHistory(loadHistory());
-  }, []);
+  const [textareaHeight, setTextareaHeight] = useState(40);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   // Keyboard shortcut to focus (Ctrl+K or Cmd+K)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        inputRef.current?.focus();
+        textareaRef.current?.focus();
       }
     };
 
@@ -139,28 +91,39 @@ export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: Com
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Placeholder rotation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDER_EXAMPLES.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // Auto-expand textarea height
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInput(value);
 
-  // Pattern detection
-  useEffect(() => {
-    const aiMatch = input.match(/\{\s*ai:\s*\}/i);
-    const imgMatch = input.match(/\{\s*img:\s*\}/i);
-    const codeMatch = input.match(/\{\s*code:\s*\}/i);
+    // Show popover only if user typed "/" and it exists in the text
+    const hasSlash = value.includes('/');
+    setShowPopover(hasSlash && !value.includes('{ '));
 
-    if (aiMatch && onPatternDetected) {
-      onPatternDetected('ai', input.replace(aiMatch[0], '').trim());
-    } else if (imgMatch && onPatternDetected) {
-      onPatternDetected('img', input.replace(imgMatch[0], '').trim());
-    } else if (codeMatch && onPatternDetected) {
-      onPatternDetected('code', input.replace(codeMatch[0], '').trim());
+    // Auto-expand textarea (min 1 line ~40px, max 5 lines ~200px)
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 40), 200);
+      setTextareaHeight(newHeight);
     }
-  }, [input, onPatternDetected]);
+  };
+
+  const handleSelectOption = (option: CommandOption) => {
+    // Replace "/" with the command prefix
+    const newInput = input.replace('/', option.prefix);
+    setInput(newInput);
+    setShowPopover(false);
+
+    // Focus and place cursor after the prefix
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const cursorPos = newInput.length;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(cursorPos, cursorPos);
+      }
+    }, 0);
+  };
 
   const runAiPipeline = useCallback(
     async (raw: string) => {
@@ -185,7 +148,6 @@ export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: Com
             return;
           }
 
-          // Add to canvas if API is available
           if (excalidrawAPI) {
             try {
               await addAITextToCanvas(excalidrawAPI, result.data);
@@ -216,7 +178,6 @@ export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: Com
             return;
           }
 
-          // Add to canvas if API is available
           if (excalidrawAPI) {
             try {
               await addAIImageToCanvas(excalidrawAPI, result.data);
@@ -252,7 +213,6 @@ export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: Com
             return;
           }
 
-          // Add to canvas if API is available
           if (excalidrawAPI) {
             try {
               await addAICodeToCanvas(excalidrawAPI, result.data, result.language);
@@ -286,22 +246,14 @@ export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: Com
     if (!input.trim()) return;
 
     setIsLoading(true);
-    setStatus('idle');
-    setHistoryIndex(-1);
+    setShowPopover(false);
 
     try {
       await runAiPipeline(input);
-      addToHistory(input);
-      setHistory(loadHistory());
       await onSubmit?.(input);
-      setStatus('success');
-      timeoutRef.current = setTimeout(() => {
-        setInput('');
-        setStatus('idle');
-        setIsOpen(false);
-      }, 1500);
+      setInput('');
+      setTextareaHeight(40);
     } catch (e) {
-      setStatus('error');
       const msg = e instanceof Error ? e.message : 'Check your input and try again.';
       addToast({
         type: 'error',
@@ -313,226 +265,101 @@ export function CommandInput({ onSubmit, onPatternDetected, excalidrawAPI }: Com
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Handle Enter - submit or select autocomplete
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter to submit
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (selectedIndex < filteredItems.length && isOpen) {
-        setInput(filteredItems[selectedIndex].label);
-        setIsOpen(false);
-      } else {
-        void handleSubmit();
-      }
+      void handleSubmit();
       return;
     }
 
-    // Handle Escape - clear and blur (improved)
+    // Escape to clear
     if (e.key === 'Escape') {
       e.preventDefault();
-      if (input) {
-        setInput('');
-        setHistoryIndex(-1);
-      }
-      setIsOpen(false);
-      setStatus('idle');
-      inputRef.current?.blur();
+      setInput('');
+      setShowPopover(false);
+      setTextareaHeight(40);
+      textareaRef.current?.blur();
       return;
     }
 
-    // Handle Up arrow - navigate history or autocomplete
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      
-      // If autocomplete is open, navigate autocomplete
-      if (isOpen && filteredItems.length > 0) {
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      } else {
-        // Navigate command history
-        const newIndex = historyIndex === -1 ? 0 : historyIndex - 1;
-        if (newIndex < history.length) {
-          setHistoryIndex(newIndex);
-          setInput(history[newIndex]);
+    // Hide popover if user deletes the "/"
+    if (e.key === 'Backspace' && !input.includes('/')) {
+      setShowPopover(false);
+    }
+  };
+
+  // Close popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        if (textareaRef.current && !textareaRef.current.contains(e.target as Node)) {
+          setShowPopover(false);
         }
       }
-      return;
+    };
+
+    if (showPopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-
-    // Handle Down arrow - navigate history or autocomplete
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      
-      // If autocomplete is open, navigate autocomplete
-      if (isOpen && filteredItems.length > 0) {
-        setSelectedIndex((prev) =>
-          prev < filteredItems.length - 1 ? prev + 1 : prev
-        );
-      } else {
-        // Navigate command history
-        if (historyIndex > 0) {
-          const newIndex = historyIndex - 1;
-          setHistoryIndex(newIndex);
-          setInput(history[newIndex]);
-        } else if (historyIndex === 0) {
-          setHistoryIndex(-1);
-          setInput('');
-        }
-      }
-      return;
-    }
-
-    // Handle Tab - autocomplete selection
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (selectedIndex < filteredItems.length && isOpen) {
-        setInput(filteredItems[selectedIndex].label);
-        setIsOpen(false);
-        setSelectedIndex(0);
-      }
-      return;
-    }
-  };
-
-  const handleSelectItem = (item: AutocompleteItem) => {
-    setInput(item.label);
-    setIsOpen(false);
-    setSelectedIndex(0);
-    setHistoryIndex(-1);
-  };
-
-  const clearInput = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setInput('');
-    setStatus('idle');
-    setIsOpen(false);
-    setHistoryIndex(-1);
-  };
-
-  const getStatusColor = () => {
-    if (status === 'success') return 'border-green-400 bg-green-50';
-    if (status === 'error') return 'border-red-400 bg-red-50';
-    return 'border-slate-200 bg-white';
-  };
-
-  const getFocusColor = () => {
-    if (status === 'success') return 'focus-visible:ring-green-400';
-    if (status === 'error') return 'focus-visible:ring-red-400';
-    return 'focus-visible:ring-blue-400';
-  };
-
-  const filteredItems = AUTOCOMPLETE_ITEMS.filter(
-    (item) =>
-      item.label.toLowerCase().includes(input.toLowerCase()) ||
-      item.description.toLowerCase().includes(input.toLowerCase())
-  );
+  }, [showPopover]);
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50 transition-all duration-300 ease-out">
-      <Popover open={isOpen && filteredItems.length > 0} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-[680px] px-4 z-50">
+      <div className="relative">
+        {/* Popover - appears above textarea */}
+        {showPopover && (
           <div
-            className={`relative backdrop-blur-md bg-white/90 border-2 rounded-full shadow-2xl transition-all duration-300 ${getStatusColor()} ${
-              isOpen && filteredItems.length > 0 ? 'border-blue-400' : ''
-            }`}
-            style={{
-              backgroundImage:
-                isOpen && filteredItems.length > 0
-                  ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))'
-                  : 'none',
-            }}
+            ref={popoverRef}
+            className="absolute bottom-full mb-3 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg p-2 animate-in fade-in slide-in-from-bottom-2"
           >
-            <div className="flex items-center px-6 py-4 gap-3">
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 text-blue-500 animate-spin shrink-0" />
-              ) : status === 'success' ? (
-                <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-              ) : status === 'error' ? (
-                <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-              ) : (
-                <Sparkles className="w-5 h-5 text-slate-400 shrink-0" />
-              )}
-
-              <Input
-                ref={inputRef}
-                type="text"
-                placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setSelectedIndex(0);
-                  setHistoryIndex(-1);
-                  setIsOpen(true);
-                }}
-                onKeyDown={handleKeyDown}
-                onFocus={() =>
-                  input.length > 0 &&
-                  filteredItems.length > 0 &&
-                  setIsOpen(true)
-                }
-                disabled={isLoading}
-                className={`border-0 bg-transparent text-slate-900 placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none disabled:cursor-not-allowed flex-1 text-lg ${getFocusColor()}`}
-              />
-
-              {input && (
+            <div className="space-y-1">
+              {COMMAND_OPTIONS.map((option) => (
                 <button
+                  key={option.type}
                   type="button"
-                  onClick={clearInput}
-                  disabled={isLoading}
-                  className="text-slate-400 hover:text-slate-600 disabled:opacity-50 transition-colors"
-                  aria-label="Clear input"
+                  onClick={() => handleSelectOption(option)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left"
                 >
-                  ✕
+                  <span className="text-slate-600 flex-shrink-0">{option.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-900 text-sm">{option.label}</p>
+                    <p className="text-xs text-slate-500">{option.description}</p>
+                  </div>
                 </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => void handleSubmit()}
-                disabled={!input.trim() || isLoading}
-                className="shrink-0 text-slate-400 hover:text-blue-500 disabled:opacity-50 transition-colors"
-                aria-label="Submit command"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+              ))}
             </div>
           </div>
-        </PopoverTrigger>
+        )}
 
-        <PopoverContent
-          className="w-96 p-2 backdrop-blur-md bg-white/95 border border-slate-200 rounded-xl shadow-2xl"
-          align="center"
-          sideOffset={12}
-        >
-          <div className="space-y-1">
-            {filteredItems.map((item, index) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => handleSelectItem(item)}
-                className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg transition-all ${
-                  index === selectedIndex
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-slate-50 border border-transparent'
-                }`}
-              >
-                <div className="shrink-0 mt-1 text-slate-600">
-                  {item.icon}
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-slate-900 text-sm">{item.label}</p>
-                  <p className="text-xs text-slate-500">{item.description}</p>
-                </div>
-                {item.shortcut && (
-                  <div className="shrink-0 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-                    {item.shortcut}
-                  </div>
-                )}
-              </button>
-            ))}
+        {/* Input container */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+          <div className="flex items-end gap-3 px-4 py-3">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask AI anything, or type "/" to pick a command type..."
+              disabled={isLoading}
+              rows={1}
+              style={{ height: `${textareaHeight}px` }}
+              className="flex-1 resize-none bg-transparent border-0 outline-none focus:ring-0 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed font-normal text-base leading-6"
+            />
+
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={!input.trim() || isLoading}
+              className="flex-shrink-0 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Submit command"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
-        </PopoverContent>
-      </Popover>
+        </div>
+      </div>
     </div>
   );
 }
