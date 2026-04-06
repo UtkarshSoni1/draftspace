@@ -46,9 +46,13 @@ export function RoomDialog({ onRoomSelected, defaultTab = 'create' }: RoomDialog
         body: JSON.stringify({ name: roomName }),
       });
 
-      if (!response.ok) throw new Error('Failed to create room');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create room');
+      }
 
       const data = await response.json();
+
       addToast({
         type: 'success',
         message: 'Room created',

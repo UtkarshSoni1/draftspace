@@ -8,10 +8,6 @@ export async function POST(request: NextRequest) {
   try {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { name } = await request.json();
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -23,10 +19,13 @@ export async function POST(request: NextRequest) {
     // Generate unique room ID
     const roomId = crypto.randomBytes(8).toString('hex').toUpperCase();
 
+    // Use token if available, otherwise use 'anonymous'
+    const createdBy = token ? (token.sub || token.email) : 'anonymous';
+
     const room = await Room.create({
       roomId,
       name: name.trim(),
-      createdBy: token.sub || token.email,
+      createdBy,
       canvasData: {
         elements: [],
         appState: {},

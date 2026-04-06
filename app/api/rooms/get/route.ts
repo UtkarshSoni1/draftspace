@@ -5,12 +5,6 @@ import Room from '@/models/Room';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const roomId = request.nextUrl.searchParams.get('roomId');
 
     if (!roomId) {
