@@ -341,7 +341,7 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask AI anything, or type "/" to pick a command type..."
+              placeholder={`Ask AI anything, or type "/" to pick a command type...`}
               disabled={isLoading}
               rows={1}
               style={{ height: `${textareaHeight}px` }}
