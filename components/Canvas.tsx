@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import Excalidraw to prevent server-side evaluation
@@ -46,6 +46,40 @@ export function Canvas({
     [onExcalidrawAPI]
   );
 
+  // Sync tool changes to Excalidraw
+  useEffect(() => {
+    if (!excalidrawRef.current) return;
+
+    const api = excalidrawRef.current;
+    const appState = api.getAppState?.();
+    if (!appState) return;
+
+    // Map toolbar tool names to Excalidraw tool types
+    const toolMap: Record<string, string> = {
+      'select': 'selection',
+      'pen': 'freedraw',
+      'eraser': 'eraser',
+      'rectangle': 'rectangle',
+      'circle': 'diamond',
+      'line': 'line',
+      'text': 'text',
+    };
+
+    const excalidrawTool = toolMap[activeTool] || activeTool;
+    
+    api.updateScene({
+      appState: {
+        activeTool: {
+          type: excalidrawTool,
+        },
+        currentItemStrokeColor: strokeColor,
+        currentItemStrokeWidth: strokeWidth,
+        currentItemBackgroundColor: strokeColor,
+      },
+      captureUpdate: true,
+    });
+  }, [activeTool, strokeColor, strokeWidth]);
+
   // Track changes
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     // Canvas is tracking changes
@@ -80,6 +114,7 @@ export function Canvas({
         <Excalidraw
           onChange={handleChange}
           excalidrawAPI={handleExcalidrawAPI}
+          readOnly={false}
           viewModeEnabled={false}
           zenModeEnabled={false}
           gridModeEnabled={gridEnabled}
