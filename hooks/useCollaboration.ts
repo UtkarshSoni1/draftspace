@@ -47,78 +47,88 @@ export function useCollaboration({
   useEffect(() => {
     if (!enabled || !roomId || !userId) return;
 
-    // Initialize socket connection
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin, {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    });
-
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      console.log('[Collab] Connected to socket server');
-      setIsConnected(true);
-
-      // Join room
-      socket.emit('join-room', {
-        roomId,
-        userId,
-        userName,
-        userColor: userColor.current,
+    // Attempt to initialize socket connection, but gracefully degrade if server unavailable
+    try {
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 3,
+        transports: ['websocket', 'polling'],
       });
 
-      // Request initial canvas state
-      socket.emit('request-canvas-state', { roomId, userId });
-    });
+      socketRef.current = socket;
 
-    socket.on('user-joined', (data: { users: RoomUser[]; joinedUser: RoomUser }) => {
-      console.log('[Collab] User joined:', data.joinedUser.userName);
-      setUsers(data.users);
-    });
+      socket.on('connect', () => {
+        console.log('[Collab] Connected to socket server');
+        setIsConnected(true);
 
-    socket.on('user-left', (data: { userId: string; users: RoomUser[] }) => {
-      console.log('[Collab] User left:', data.userId);
-      setUsers(data.users);
-    });
+        // Join room
+        socket.emit('join-room', {
+          roomId,
+          userId,
+          userName,
+          userColor: userColor.current,
+        });
 
-    socket.on('canvas-updated', (data: { elements: any[]; appState: any }) => {
-      // Canvas update received from other users
-      // Will be handled by parent component
-      window.dispatchEvent(
-        new CustomEvent('remote-canvas-update', {
-          detail: data,
-        })
-      );
-    });
+        // Request initial canvas state
+        socket.emit('request-canvas-state', { roomId, userId });
+      });
 
-    socket.on('canvas-state', (data: { elements: any[]; appState: any }) => {
-      console.log('[Collab] Initial canvas state received');
-      window.dispatchEvent(
-        new CustomEvent('initial-canvas-state', {
-          detail: data,
-        })
-      );
-    });
+      socket.on('user-joined', (data: { users: RoomUser[]; joinedUser: RoomUser }) => {
+        console.log('[Collab] User joined:', data.joinedUser.userName);
+        setUsers(data.users);
+      });
 
-    socket.on('disconnect', () => {
-      console.log('[Collab] Disconnected from socket server');
+      socket.on('error', (error) => {
+        console.warn('[Collab] Socket error, falling back to polling:', error);
+        // Gracefully degrade - socket.io will continue trying to reconnect
+        // but app will still function with read-only collaboration
+        setIsConnected(false);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('[Collab] Disconnected from socket server');
+        setIsConnected(false);
+      });
+
+      socket.on('user-left', (data: { userId: string; users: RoomUser[] }) => {
+        console.log('[Collab] User left:', data.userId);
+        setUsers(data.users);
+      });
+
+      socket.on('canvas-updated', (data: { elements: any[]; appState: any }) => {
+        window.dispatchEvent(
+          new CustomEvent('remote-canvas-update', {
+            detail: data,
+          })
+        );
+      });
+
+      socket.on('canvas-state', (data: { elements: any[]; appState: any }) => {
+        console.log('[Collab] Initial canvas state received');
+        window.dispatchEvent(
+          new CustomEvent('initial-canvas-state', {
+            detail: data,
+          })
+        );
+      });
+
+      return () => {
+        if (socket.connected) {
+          socket.emit('leave-room', { roomId, userId });
+          socket.disconnect();
+        }
+        socketRef.current = null;
+      };
+    } catch (error) {
+      console.warn('[Collab] Socket.io initialization failed, collaboration disabled:', error);
+      // Fall back to API-based updates instead of real-time socket
       setIsConnected(false);
-      setUsers([]);
-    });
-
-    socket.on('connect_error', (error: Error) => {
-      console.error('[Collab] Socket error:', error);
-    });
-
-    return () => {
-      if (socket.connected) {
-        socket.emit('leave-room', { roomId, userId });
-        socket.disconnect();
-      }
-      socketRef.current = null;
-    };
+      return () => {
+        socketRef.current = null;
+      };
+    }
   }, [enabled, roomId, userId, userName]);
 
   const sendCanvasChange = useCallback(
