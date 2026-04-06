@@ -1,11 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SettingsPanel, type AIProvider } from '@/components/SettingsPanel';
 import { CommandInput } from '@/components/CommandInput';
 import ToastContainer from '@/components/ToastNotification';
 import PropertiesPanel from '@/components/PropertiesPanel';
 import { Canvas } from '@/components/Canvas';
+import { RoomDialog } from '@/components/RoomDialog';
+import { CollaborationPanel } from '@/components/CollaborationPanel';
+import { RemoteCursor } from '@/components/RemoteCursor';
+import { useCollaboration } from '@/hooks/useCollaboration';
+import { useRemoteCursors } from '@/hooks/useRemoteCursors';
+import { useToast } from '@/context/ToastContext';
 
 const STORAGE_KEY = 'draftspace-settings';
 
@@ -51,7 +59,48 @@ const defaultSettings: PersistedSettings = {
 };
 
 export default function Home() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { addToast } = useToast();
   const [hydrated, setHydrated] = useState(false);
+
+  // Collaboration state
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [activeRoomName, setActiveRoomName] = useState<string>('');
+  const [isCollaborating, setIsCollaborating] = useState(false);
+
+  // Collaboration hooks
+  const { socket, isConnected, users, sendCanvasChange, requestCanvasState } = useCollaboration({
+    roomId: activeRoomId || '',
+    userId: session?.user?.email || 'anonymous',
+    userName: session?.user?.name || 'Anonymous',
+    enabled: isCollaborating && !!activeRoomId,
+  });
+
+  const { cursors } = useRemoteCursors({
+    socket,
+    enabled: isCollaborating,
+  });
+
+  // Track local cursor movement
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!socket || !isCollaborating) return;
+
+      const throttled = (socket as any).__cursorThrottle;
+      if (throttled && Date.now() - throttled < 50) return;
+
+      socket.emit('cursor-move', {
+        roomId: activeRoomId,
+        userId: session?.user?.email || 'anonymous',
+        x: e.clientX,
+        y: e.clientY,
+      });
+      (socket as any).__cursorThrottle = Date.now();
+    },
+    [socket, isCollaborating, activeRoomId, session]
+  );
 
   const [activeTool, setActiveTool] = useState<ToolType>(defaultSettings.activeTool);
   const [strokeColor, setStrokeColor] = useState(defaultSettings.color);
@@ -304,6 +353,75 @@ export default function Home() {
     []
   );
 
+  const handleRoomSelected = useCallback(
+    async (roomId: string) => {
+      try {
+        const response = await fetch(`/api/rooms/get?roomId=${roomId}`);
+        if (!response.ok) throw new Error('Room not found');
+
+        const data = await response.json();
+        setActiveRoomId(roomId);
+        setActiveRoomName(data.room.name);
+        setIsCollaborating(true);
+
+        addToast({
+          type: 'success',
+          message: 'Connected to room',
+          description: `Joined ${data.room.name}`,
+        });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Failed to join room';
+        addToast({
+          type: 'error',
+          message: 'Error',
+          description: msg,
+        });
+      }
+    },
+    [addToast]
+  );
+
+  const handleLeaveRoom = useCallback(() => {
+    setIsCollaborating(false);
+    setActiveRoomId(null);
+    setActiveRoomName('');
+
+    addToast({
+      type: 'success',
+      message: 'Left room',
+      description: 'Disconnected from collaboration',
+    });
+  }, [addToast]);
+
+  // Sync canvas changes when collaborating
+  useEffect(() => {
+    if (!excalidrawAPI || !isCollaborating) return;
+
+    const handleCanvasChange = (elements: any[], appState: any) => {
+      sendCanvasChange(elements, appState);
+    };
+
+    // Hook into excalidraw's onChange if available
+    const originalAPI = excalidrawAPI;
+    // This would need to be properly integrated with the Canvas component
+    // For now, we listen to canvas updates via the remote event
+    const handleRemoteUpdate = (event: CustomEvent) => {
+      const { elements, appState } = event.detail;
+      if (originalAPI?.updateScene) {
+        originalAPI.updateScene({
+          elements,
+          appState,
+          storeAction: 'capture',
+        });
+      }
+    };
+
+    window.addEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);
+    return () => {
+      window.removeEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);
+    };
+  }, [excalidrawAPI, isCollaborating, sendCanvasChange]);
+
   return (
     <div
       className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ease-out ${
@@ -311,8 +429,28 @@ export default function Home() {
           ? 'bg-slate-950 text-slate-100'
           : 'bg-linear-to-br from-slate-50 to-slate-100 text-slate-900'
       }`}
+      onMouseMove={handleMouseMove}
     >
       <div className="flex-1 min-h-0 relative w-full h-full flex items-center justify-between">
+        {/* Collaboration Panel */}
+        {isCollaborating && activeRoomId && (
+          <CollaborationPanel
+            roomId={activeRoomId}
+            roomName={activeRoomName}
+            users={users}
+            isConnected={isConnected}
+            onLeaveRoom={handleLeaveRoom}
+          />
+        )}
+
+        {/* Room Dialog - shown when not collaborating */}
+        {!isCollaborating && (
+          <div className="absolute top-4 left-4 z-40">
+            <RoomDialog onRoomSelected={handleRoomSelected} />
+          </div>
+        )}
+
+        {/* Settings Panel */}
         <div className="absolute top-4 right-4 z-40">
           <SettingsPanel
             open={settingsOpen}
@@ -331,10 +469,12 @@ export default function Home() {
             onExportBackgroundToggle={setExportBackgroundEnabled}
             exportScale={exportScale}
             onExportScaleChange={setExportScale}
-            roomId="ROOM-ABC123"
-            onlineUsers={5}
+            roomId={activeRoomId || undefined}
+            onlineUsers={users.length}
           />
         </div>
+
+        {/* Canvas */}
         <Canvas
           gridEnabled={gridEnabled}
           snapToGridEnabled={snapToGridEnabled}
@@ -344,14 +484,29 @@ export default function Home() {
           activeTool={activeTool}
           onExcalidrawAPI={setExcalidrawAPI}
         />
+
+        {/* Remote Cursors */}
+        {isCollaborating &&
+          Array.from(cursors.values()).map((cursor) => (
+            <RemoteCursor
+              key={cursor.userId}
+              userId={cursor.userId}
+              x={cursor.x}
+              y={cursor.y}
+              userName={cursor.userName}
+              userColor={cursor.userColor}
+            />
+          ))}
       </div>
 
+      {/* Command Input */}
       <CommandInput
         onSubmit={handleCommandLog}
         onPatternDetected={handlePatternDetected}
         excalidrawAPI={excalidrawAPI}
       />
 
+      {/* Toast Container */}
       <ToastContainer />
     </div>
   );
