@@ -1,29 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Logo } from './Logo';
-import { Wifi, WifiOff } from 'lucide-react';
+import { SaveStatus } from './SaveStatus';
+import { LayoutDashboard } from 'lucide-react';
 
 interface NavbarProps {
-  title?: string;
+  boardTitle?: string;
   onTitleChange?: (title: string) => void;
-  isConnected?: boolean;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
+  saveError?: string | null;
 }
 
 export function Navbar({
-  title = 'Untitled Board',
+  boardTitle = 'Untitled Board',
   onTitleChange,
-  isConnected = true,
+  isSaving = false,
+  lastSaved = null,
+  saveError = null,
 }: NavbarProps) {
   const { data: session } = useSession();
-  const [boardTitle, setBoardTitle] = useState(title);
+  const router = useRouter();
+  const [localTitle, setLocalTitle] = useState(boardTitle);
   const [isEditing, setIsEditing] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync local title with prop
+  useEffect(() => {
+    setLocalTitle(boardTitle);
+  }, [boardTitle]);
+
+  // Debounced title change
+  const handleTitleInputChange = useCallback(
+    (newTitle: string) => {
+      setLocalTitle(newTitle);
+
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+
+      debounceRef.current = setTimeout(() => {
+        if (onTitleChange) {
+          onTitleChange(newTitle);
+        }
+      }, 1000);
+    },
+    [onTitleChange]
+  );
 
   const handleTitleBlur = () => {
     setIsEditing(false);
-    if (onTitleChange) {
-      onTitleChange(boardTitle);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    if (onTitleChange && localTitle !== boardTitle) {
+      onTitleChange(localTitle);
     }
   };
 
@@ -48,13 +82,13 @@ export function Navbar({
         <Logo size="sm" />
       </div>
 
-      {/* Center: Board title input */}
-      <div className="flex-1 min-w-0 flex justify-center px-4">
+      {/* Center: Board title input + Save status */}
+      <div className="flex-1 min-w-0 flex items-center justify-center gap-3 px-4">
         {isEditing ? (
           <input
             type="text"
-            value={boardTitle}
-            onChange={(e) => setBoardTitle(e.target.value)}
+            value={localTitle}
+            onChange={(e) => handleTitleInputChange(e.target.value)}
             onBlur={handleTitleBlur}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -74,33 +108,39 @@ export function Navbar({
             className="text-sm font-medium hover:opacity-70 transition-opacity"
             style={{ color: '#5C4A2A' }}
           >
-            {boardTitle}
+            {localTitle}
           </button>
         )}
+        
+        <SaveStatus
+          isSaving={isSaving}
+          lastSaved={lastSaved}
+          error={saveError}
+        />
       </div>
 
-      {/* Right: Status, Avatar, Sign in */}
+      {/* Right: Dashboard, Avatar, Sign in */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        {/* Connection status */}
-        <div
-          className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium"
-          style={{
-            backgroundColor: isConnected ? '#9CA764' : '#E8DDB5',
-            color: isConnected ? 'white' : '#5C4A2A',
-          }}
-        >
-          {isConnected ? (
-            <>
-              <span>●</span>
-              <span>Live</span>
-            </>
-          ) : (
-            <>
-              <span>○</span>
-              <span>Offline</span>
-            </>
-          )}
-        </div>
+        {/* Dashboard button (only show if logged in) */}
+        {session && (
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-all hover:bg-opacity-10"
+            style={{
+              color: '#5C4A2A',
+              borderColor: '#E8DDB5',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E8DDB5';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>My Boards</span>
+          </button>
+        )}
 
         {/* User avatar or sign in */}
         {session ? (

@@ -19,8 +19,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected routes: /collaboration/*, /live/*, /room/*
-  if (pathname.startsWith('/collaboration') || pathname.startsWith('/live') || pathname.startsWith('/room')) {
+  // Protected routes: /dashboard
+  if (pathname.startsWith('/dashboard')) {
     if (!token) {
       const callbackUrl = encodeURIComponent(pathname + request.nextUrl.search);
       return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, request.url));
