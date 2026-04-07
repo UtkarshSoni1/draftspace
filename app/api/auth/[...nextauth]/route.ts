@@ -4,6 +4,14 @@ import GoogleProvider from 'next-auth/providers/google';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
 
+// Get the base URL dynamically - works for both localhost and preview domains
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') return '';
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'http://localhost:3000';
+};
+
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -90,11 +98,19 @@ export const authOptions = {
       }
       return session;
     },
-    async redirect({ baseUrl, url }: any) {
-      // Redirect to dashboard after sign in, or the requested URL
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      else if (new URL(url).origin === baseUrl) return url;
-      return baseUrl + '/dashboard';
+    async redirect({ url }: any) {
+      // Allow relative URLs
+      if (url.startsWith('/')) return url;
+      // Allow URLs on the same origin
+      try {
+        const urlObj = new URL(url);
+        const baseUrl = getBaseUrl();
+        const baseUrlObj = new URL(baseUrl);
+        if (urlObj.origin === baseUrlObj.origin) return url;
+      } catch {
+        // Invalid URL, redirect to dashboard
+      }
+      return '/dashboard';
     },
   },
   pages: {
