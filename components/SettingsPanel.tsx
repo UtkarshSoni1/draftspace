@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import {
   Settings,
+  Copy,
   Eye,
   EyeOff,
   Grid3x3,
   Moon,
+  Users,
   Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,6 +54,8 @@ export interface SettingsPanelProps {
   onExportBackgroundToggle: (enabled: boolean) => void;
   exportScale: number;
   onExportScaleChange: (scale: number) => void;
+  roomId?: string;
+  onlineUsers?: number;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -71,9 +75,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onExportBackgroundToggle,
   exportScale,
   onExportScaleChange,
+  roomId = 'ROOM-12345',
+  onlineUsers = 3,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [apiKeyError, setApiKeyError] = useState('');
+  const [copiedRoomId, setCopiedRoomId] = useState(false);
 
   const handleAIProviderChange = (value: AIProvider) => {
     onAIProviderChange(value);
@@ -115,6 +122,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const handleExportScaleChange = (value: number[]) => {
     onExportScaleChange(value[0] ?? 1);
+  };
+
+  const copyRoomIdToClipboard = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopiedRoomId(true);
+    setTimeout(() => setCopiedRoomId(false), 2000);
   };
 
   return (
@@ -253,6 +266,46 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     checked={darkModeEnabled}
                     onCheckedChange={handleDarkModeToggle}
                   />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-600" />
+                <h3 className="font-semibold text-sm">Collaboration</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="room-id" className="text-xs text-gray-600 mb-1 block">
+                    Room ID
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="room-id"
+                      value={roomId}
+                      readOnly
+                      className="bg-gray-50 font-mono text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={copyRoomIdToClipboard}
+                      className="px-3"
+                    >
+                      <Copy className={`h-4 w-4 ${copiedRoomId ? 'text-green-600' : ''}`} />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="text-xs text-gray-600">Online Users</p>
+                      <p className="text-lg font-semibold text-blue-600">{onlineUsers}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -9,11 +9,6 @@ const Excalidraw = dynamic(() => import('@excalidraw/excalidraw').then(mod => ({
   loading: () => <div className="w-full h-full flex items-center justify-center">Loading canvas...</div>,
 });
 
-interface InitialData {
-  elements?: unknown[];
-  appState?: Record<string, unknown>;
-}
-
 interface CanvasProps {
   gridEnabled?: boolean;
   snapToGridEnabled?: boolean;
@@ -21,9 +16,7 @@ interface CanvasProps {
   strokeColor?: string;
   strokeWidth?: number;
   activeTool?: string;
-  onExcalidrawAPI?: (api: unknown) => void;
-  onChange?: (elements: unknown[], appState: Record<string, unknown>) => void;
-  initialData?: InitialData;
+  onExcalidrawAPI?: (api: any) => void;
 }
 
 export function Canvas({
@@ -34,12 +27,9 @@ export function Canvas({
   strokeWidth = 2,
   activeTool = 'selection',
   onExcalidrawAPI,
-  onChange,
-  initialData,
 }: CanvasProps) {
   const excalidrawRef = useRef<any>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -55,21 +45,6 @@ export function Canvas({
     },
     [onExcalidrawAPI]
   );
-
-  // Load initial data when API is ready and data is available
-  useEffect(() => {
-    if (!excalidrawRef.current || !initialData || hasLoadedInitialData) return;
-
-    const api = excalidrawRef.current;
-    if (initialData.elements && initialData.elements.length > 0) {
-      api.updateScene({
-        elements: initialData.elements,
-        appState: initialData.appState || {},
-        storeAction: 'capture',
-      });
-      setHasLoadedInitialData(true);
-    }
-  }, [initialData, hasLoadedInitialData]);
 
   // Sync tool changes to Excalidraw
   useEffect(() => {
@@ -105,12 +80,10 @@ export function Canvas({
     });
   }, [activeTool, strokeColor, strokeWidth]);
 
-  // Track changes and notify parent
-  const handleChange = useCallback((elements: any[], appState: any, _files: any) => {
-    if (onChange) {
-      onChange(elements, appState);
-    }
-  }, [onChange]);
+  // Track changes
+  const handleChange = useCallback((elements: any, appState: any, files: any) => {
+    // Canvas is tracking changes
+  }, []);
 
   if (!isMounted) {
     return (
@@ -146,10 +119,6 @@ export function Canvas({
           zenModeEnabled={false}
           gridModeEnabled={gridEnabled}
           theme={darkMode ? 'dark' : 'light'}
-          initialData={initialData ? {
-            elements: initialData.elements || [],
-            appState: initialData.appState || {},
-          } : undefined}
         />
       </div>
     </div>
