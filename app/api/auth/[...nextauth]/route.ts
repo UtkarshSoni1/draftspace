@@ -90,8 +90,11 @@ export const authOptions = {
       }
       return session;
     },
-    async redirect({ baseUrl }: any) {
-      return baseUrl;
+    async redirect({ baseUrl, url }: any) {
+      // Redirect to dashboard after sign in, or the requested URL
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl + '/dashboard';
     },
   },
   pages: {
