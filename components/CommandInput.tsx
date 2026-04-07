@@ -312,7 +312,11 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
         {showPopover && (
           <div
             ref={popoverRef}
-            className="absolute bottom-full mb-3 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg p-2 animate-in fade-in slide-in-from-bottom-2"
+            className="absolute bottom-full mb-3 left-0 right-0 rounded-xl shadow-lg p-2 animate-in fade-in slide-in-from-bottom-2"
+            style={{
+              backgroundColor: '#FDFAF3',
+              border: '1px solid #E8DDB5',
+            }}
           >
             <div className="space-y-1">
               {COMMAND_OPTIONS.map((option) => (
@@ -320,12 +324,21 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
                   key={option.type}
                   type="button"
                   onClick={() => handleSelectOption(option)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left"
+                  style={{
+                    color: '#5C4A2A',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#F1E8C7';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <span className="text-slate-600 flex-shrink-0">{option.icon}</span>
+                  <span style={{ color: '#9CA764' }} className="flex-shrink-0">{option.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 text-sm">{option.label}</p>
-                    <p className="text-xs text-slate-500">{option.description}</p>
+                    <p className="font-medium text-sm">{option.label}</p>
+                    <p className="text-xs opacity-70">{option.description}</p>
                   </div>
                 </button>
               ))}
@@ -334,7 +347,14 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
         )}
 
         {/* Input container */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+        <div
+          className="rounded-2xl shadow-md hover:shadow-lg transition-shadow"
+          style={{
+            backgroundColor: '#FDFAF3',
+            border: '1px solid #E8DDB5',
+            boxShadow: '0 4px 24px rgba(92, 74, 42, 0.12)',
+          }}
+        >
           <div className="flex items-end gap-3 px-4 py-3">
             <textarea
               ref={textareaRef}
@@ -344,15 +364,32 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
               placeholder={`Ask AI anything, or type "/" to pick a command type...`}
               disabled={isLoading}
               rows={1}
-              style={{ height: `${textareaHeight}px` }}
-              className="flex-1 resize-none bg-transparent border-0 outline-none focus:ring-0 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed font-normal text-base leading-6"
+              style={{
+                height: `${textareaHeight}px`,
+                color: '#5C4A2A',
+                caretColor: '#9CA764',
+              }}
+              className="flex-1 resize-none bg-transparent border-0 outline-none focus:ring-0 placeholder:opacity-60 disabled:opacity-50 disabled:cursor-not-allowed font-normal text-base leading-6"
             />
 
             <button
               type="button"
               onClick={() => void handleSubmit()}
               disabled={!input.trim() || isLoading}
-              className="flex-shrink-0 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-shrink-0 transition-colors disabled:cursor-not-allowed"
+              style={{
+                color: isLoading || !input.trim() ? '#E8DDB5' : '#9CA764',
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading && input.trim()) {
+                  e.currentTarget.style.color = '#7A8A4E';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading && input.trim()) {
+                  e.currentTarget.style.color = '#9CA764';
+                }
+              }}
               aria-label="Submit command"
             >
               <ArrowRight className="w-5 h-5" />

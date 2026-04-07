@@ -11,6 +11,9 @@ import { Canvas } from '@/components/Canvas';
 import { RoomDialog } from '@/components/RoomDialog';
 import { CollaborationPanel } from '@/components/CollaborationPanel';
 import { RemoteCursor } from '@/components/RemoteCursor';
+import { Navbar } from '@/components/Navbar';
+import { SplashScreen } from '@/components/SplashScreen';
+import { EmptyCanvasHint } from '@/components/EmptyCanvasHint';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import { useRemoteCursors } from '@/hooks/useRemoteCursors';
 import { useToast } from '@/context/ToastContext';
@@ -122,6 +125,9 @@ export default function Home() {
   const [undoCount, setUndoCount] = useState(0);
   const [redoCount, setRedoCount] = useState(0);
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
+
+  const [boardTitle, setBoardTitle] = useState('Untitled Board');
+  const [canvasEmpty, setCanvasEmpty] = useState(true);
 
   const [selectedElement, setSelectedElement] = useState<SelectedShape | null>({
     id: 'element-1',
@@ -424,14 +430,18 @@ export default function Home() {
 
   return (
     <div
-      className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ease-out ${
-        darkMode
-          ? 'bg-slate-950 text-slate-100'
-          : 'bg-linear-to-br from-slate-50 to-slate-100 text-slate-900'
-      }`}
+      className="h-screen w-screen flex flex-col overflow-hidden"
+      style={{ backgroundColor: '#F7F3E8' }}
       onMouseMove={handleMouseMove}
     >
-      <div className="flex-1 min-h-0 relative w-full h-full flex items-center justify-between">
+      <SplashScreen />
+      <Navbar 
+        title={boardTitle}
+        onTitleChange={setBoardTitle}
+        isConnected={isConnected}
+      />
+
+      <div className="flex-1 min-h-0 relative w-full h-full flex items-center justify-between" style={{ marginTop: '56px' }}>
         {/* Collaboration Panel */}
         {isCollaborating && activeRoomId && (
           <CollaborationPanel
@@ -475,15 +485,18 @@ export default function Home() {
         </div>
 
         {/* Canvas */}
-        <Canvas
-          gridEnabled={gridEnabled}
-          snapToGridEnabled={snapToGridEnabled}
-          darkMode={darkMode}
-          strokeColor={strokeColor}
-          strokeWidth={strokeWidth}
-          activeTool={activeTool}
-          onExcalidrawAPI={setExcalidrawAPI}
-        />
+        <div className="relative flex-1 w-full h-full">
+          <Canvas
+            gridEnabled={gridEnabled}
+            snapToGridEnabled={snapToGridEnabled}
+            darkMode={darkMode}
+            strokeColor={strokeColor}
+            strokeWidth={strokeWidth}
+            activeTool={activeTool}
+            onExcalidrawAPI={setExcalidrawAPI}
+          />
+          <EmptyCanvasHint isEmpty={canvasEmpty} />
+        </div>
 
         {/* Remote Cursors */}
         {isCollaborating &&

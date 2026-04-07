@@ -4,6 +4,19 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Brand colors */
+  --brand-moss: #9CA764;
+  --brand-moss-dark: #7A8A4E;
+  --brand-moss-light: #C5D08A;
+  --brand-bark: #5C4A2A;
+  --brand-sand: #E8DDB5;
+  --brand-fog: #F7F3E8;
+  --brand-white: #FDFAF3;
+  --brand-cream: #F1E8C7;
+  --brand-error: #C0392B;
+  --brand-success: #9CA764;
+
+  /* Existing variables */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -37,6 +50,50 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Brand utility classes */
+.brand-gradient {
+  background: linear-gradient(135deg, #F1E8C7 0%, #E8DDB5 100%);
+}
+
+.brand-card {
+  background: #FDFAF3;
+  border: 1px solid #E8DDB5;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(92, 74, 42, 0.08);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1E8C7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C5D08A;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA764;
+}
+
+/* Firefox scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #C5D08A #F1E8C7;
+}
+
+/* Global styles */
+html, body {
+  background-color: #F7F3E8;
+  color: #5C4A2A;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .dark {

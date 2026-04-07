@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/Logo';
 import { Chrome } from 'lucide-react';
 
 export default function SignupPage() {
@@ -103,20 +104,30 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+    <div className="min-h-screen w-full flex items-center justify-center px-4" style={{ backgroundColor: '#F7F3E8' }}>
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="brand-card p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <Logo size="md" />
+          </div>
+
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Create account</h1>
-            <p className="text-slate-600">Join DraftSpace and start drawing</p>
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold mb-2" style={{ color: '#5C4A2A' }}>Create account</h1>
+            <p style={{ color: '#9CA764' }}>Join DraftSpace and start drawing</p>
           </div>
 
           {/* Google OAuth Button */}
           <Button
             type="button"
             variant="outline"
-            className="w-full mb-6 border-slate-200 hover:bg-slate-50"
+            className="w-full mb-6"
+            style={{
+              backgroundColor: '#FDFAF3',
+              borderColor: '#E8DDB5',
+              color: '#5C4A2A',
+            }}
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
@@ -127,10 +138,10 @@ export default function SignupPage() {
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
+              <div className="w-full" style={{ borderTop: '1px solid #E8DDB5' }}></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-500">Or continue with email</span>
+              <span className="px-2" style={{ backgroundColor: '#FDFAF3', color: '#9CA764' }}>Or continue with email</span>
             </div>
           </div>
 
@@ -138,7 +149,7 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Input */}
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-slate-700">
+              <Label htmlFor="name" style={{ color: '#5C4A2A' }}>
                 Full Name
               </Label>
               <Input
@@ -148,13 +159,16 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={loading}
-                className="border-slate-200"
+                style={{
+                  borderColor: '#E8DDB5',
+                  color: '#5C4A2A',
+                }}
               />
             </div>
 
             {/* Email Input */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">
+              <Label htmlFor="email" style={{ color: '#5C4A2A' }}>
                 Email
               </Label>
               <Input
@@ -164,13 +178,16 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="border-slate-200"
+                style={{
+                  borderColor: '#E8DDB5',
+                  color: '#5C4A2A',
+                }}
               />
             </div>
 
             {/* Password Input */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">
+              <Label htmlFor="password" style={{ color: '#5C4A2A' }}>
                 Password
               </Label>
               <Input
@@ -180,13 +197,16 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="border-slate-200"
+                style={{
+                  borderColor: '#E8DDB5',
+                  color: '#5C4A2A',
+                }}
               />
             </div>
 
             {/* Confirm Password Input */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-slate-700">
+              <Label htmlFor="confirmPassword" style={{ color: '#5C4A2A' }}>
                 Confirm Password
               </Label>
               <Input
@@ -196,13 +216,16 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
-                className="border-slate-200"
+                style={{
+                  borderColor: '#E8DDB5',
+                  color: '#5C4A2A',
+                }}
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+              <div className="p-3 rounded-md text-sm" style={{ backgroundColor: '#F1E8C7', color: '#C0392B', border: '1px solid #E8DDB5' }}>
                 {error}
               </div>
             )}
@@ -210,7 +233,8 @@ export default function SignupPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-slate-900 hover:bg-slate-800"
+              className="w-full text-white"
+              style={{ backgroundColor: '#9CA764' }}
               disabled={loading}
             >
               {loading ? 'Creating account...' : 'Create account'}
@@ -219,9 +243,9 @@ export default function SignupPage() {
 
           {/* Sign In Link */}
           <div className="mt-6 text-center">
-            <p className="text-slate-600 text-sm">
+            <p style={{ color: '#5C4A2A' }} className="text-sm">
               Already have an account?{' '}
-              <Link href="/login" className="font-semibold text-slate-900 hover:underline">
+              <Link href="/login" className="font-semibold hover:underline" style={{ color: '#9CA764' }}>
                 Sign in
               </Link>
             </p>

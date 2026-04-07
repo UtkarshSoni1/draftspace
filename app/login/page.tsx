@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/Logo';
 import { Chrome } from 'lucide-react';
 
 export default function LoginPage() {
@@ -73,20 +74,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+    <div className="min-h-screen w-full flex items-center justify-center px-4" style={{ backgroundColor: '#F7F3E8' }}>
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="brand-card p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <Logo size="md" />
+          </div>
+
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Sign in</h1>
-            <p className="text-slate-600">Welcome back to DraftSpace</p>
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold mb-2" style={{ color: '#5C4A2A' }}>Sign in</h1>
+            <p style={{ color: '#9CA764' }}>Welcome back to DraftSpace</p>
           </div>
 
           {/* Google OAuth Button */}
           <Button
             type="button"
             variant="outline"
-            className="w-full mb-6 border-slate-200 hover:bg-slate-50"
+            className="w-full mb-6"
+            style={{
+              backgroundColor: '#FDFAF3',
+              borderColor: '#E8DDB5',
+              color: '#5C4A2A',
+            }}
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
@@ -97,10 +108,10 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
+              <div className="w-full" style={{ borderTop: '1px solid #E8DDB5' }}></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-500">Or continue with email</span>
+              <span className="px-2" style={{ backgroundColor: '#FDFAF3', color: '#9CA764' }}>Or continue with email</span>
             </div>
           </div>
 
@@ -108,7 +119,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Input */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">
+              <Label htmlFor="email" style={{ color: '#5C4A2A' }}>
                 Email
               </Label>
               <Input
@@ -118,13 +129,16 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="border-slate-200"
+                style={{
+                  borderColor: '#E8DDB5',
+                  color: '#5C4A2A',
+                }}
               />
             </div>
 
             {/* Password Input */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">
+              <Label htmlFor="password" style={{ color: '#5C4A2A' }}>
                 Password
               </Label>
               <Input
@@ -134,13 +148,16 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="border-slate-200"
+                style={{
+                  borderColor: '#E8DDB5',
+                  color: '#5C4A2A',
+                }}
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+              <div className="p-3 rounded-md text-sm" style={{ backgroundColor: '#F1E8C7', color: '#C0392B', border: '1px solid #E8DDB5' }}>
                 {error}
               </div>
             )}
@@ -148,7 +165,8 @@ export default function LoginPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-slate-900 hover:bg-slate-800"
+              className="w-full text-white"
+              style={{ backgroundColor: '#9CA764' }}
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign in'}
@@ -157,9 +175,9 @@ export default function LoginPage() {
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
-            <p className="text-slate-600 text-sm">
+            <p style={{ color: '#5C4A2A' }} className="text-sm">
               Don&apos;t have an account?{' '}
-              <Link href="/signup" className="font-semibold text-slate-900 hover:underline">
+              <Link href="/signup" className="font-semibold hover:underline" style={{ color: '#9CA764' }}>
                 Sign up
               </Link>
             </p>
