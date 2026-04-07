@@ -4,14 +4,6 @@ import GoogleProvider from 'next-auth/providers/google';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
 
-// Get the base URL dynamically - works for both localhost and preview domains
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') return '';
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'http://localhost:3000';
-};
-
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -53,6 +45,7 @@ export const authOptions = {
           GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            allowDangerousEmailAccountLinking: true,
             async profile(profile) {
               await connectToDatabase();
 
@@ -67,6 +60,12 @@ export const authOptions = {
                   name: profile.name || 'User',
                   // No password for Google-only users
                 });
+              } else {
+                // Update existing user with Google info if not already set
+                if (!user.name || user.name === 'User') {
+                  user.name = profile.name || user.name;
+                }
+                await user.save();
               }
 
               return {
@@ -98,19 +97,18 @@ export const authOptions = {
       }
       return session;
     },
-    async redirect({ url }: any) {
+    async redirect({ url, baseUrl }: any) {
+      console.log('[NextAuth] Redirect - URL:', url, 'BaseUrl:', baseUrl);
       // Allow relative URLs
-      if (url.startsWith('/')) return url;
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
       // Allow URLs on the same origin
       try {
         const urlObj = new URL(url);
-        const baseUrl = getBaseUrl();
-        const baseUrlObj = new URL(baseUrl);
-        if (urlObj.origin === baseUrlObj.origin) return url;
-      } catch {
-        // Invalid URL, redirect to dashboard
+        if (new URL(baseUrl).origin === urlObj.origin) return url;
+      } catch (error) {
+        console.log('[NextAuth] Redirect error parsing URL:', error);
       }
-      return '/dashboard';
+      return `${baseUrl}/dashboard`;
     },
   },
   pages: {
