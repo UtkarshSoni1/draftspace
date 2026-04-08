@@ -12,7 +12,7 @@ import { Navbar } from '@/components/Navbar';
 import { SplashScreen } from '@/components/SplashScreen';
 import { EmptyCanvasHint } from '@/components/EmptyCanvasHint';
 import { SaveStatus } from '@/components/SaveStatus';
-import { SocialMenu } from '@/components/SocialMenu';
+import { SocialsPill } from '@/components/SocialsPill';
 import { useBoardSync } from '@/hooks/useBoardSync';
 import { useToast } from '@/context/ToastContext';
 
@@ -372,8 +372,8 @@ export default function Home() {
           />
         </div>
 
-        {/* Social Menu */}
-        <SocialMenu />
+        {/* Socials Pill */}
+        <SocialsPill />
 
         {/* Canvas */}
         <div className="relative flex-1 w-full h-full">
