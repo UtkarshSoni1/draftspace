@@ -53,7 +53,7 @@ export function SocialsPill() {
   return (
     <div
       ref={containerRef}
-      className="fixed top-5 right-5 z-50"
+      className="fixed bottom-5 right-5 z-50"
       onMouseLeave={handleMouseLeave}
     >
       {/* Closed Pill State */}
@@ -76,7 +76,7 @@ export function SocialsPill() {
       {/* Open Dialog State */}
       {isOpen && (
         <div
-          className="absolute top-0 right-0 rounded-2xl p-3 shadow-xl border animate-in fade-in zoom-in-95 duration-200"
+          className="absolute bottom-0 right-0 rounded-2xl p-3 shadow-xl border animate-in fade-in zoom-in-95 duration-200"
           style={{
             backgroundColor: '#FDFAF3',
             borderColor: '#E8DDB5',
