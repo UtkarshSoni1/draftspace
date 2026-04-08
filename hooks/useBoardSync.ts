@@ -114,10 +114,12 @@ export function useBoardSync(initialBoardId: string | null): UseBoardSyncReturn 
           targetBoardId = createData.board._id;
           setBoardId(targetBoardId);
 
-          // Update URL without triggering navigation
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set('board', targetBoardId);
-          window.history.replaceState({}, '', newUrl.toString());
+          // Update URL without triggering navigation (only if window exists)
+          if (typeof window !== 'undefined') {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('board', targetBoardId);
+            window.history.replaceState({}, '', newUrl.toString());
+          }
         }
 
         // Now update the board with content
@@ -141,6 +143,13 @@ export function useBoardSync(initialBoardId: string | null): UseBoardSyncReturn 
         
         // Update the hash to track what we've saved
         lastSaveDataRef.current = JSON.stringify({ elements, title });
+        
+        // Update URL without triggering navigation (only if window exists)
+        if (typeof window !== 'undefined') {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('board', targetBoardId);
+          window.history.replaceState({}, '', newUrl.toString());
+        }
       } catch (err) {
         console.error('Error saving board:', err);
         setError(err instanceof Error ? err.message : 'Failed to save');
