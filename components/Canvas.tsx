@@ -119,6 +119,13 @@ export function Canvas({
           zenModeEnabled={false}
           gridModeEnabled={gridEnabled}
           theme={darkMode ? 'dark' : 'light'}
+          appState={{
+            penMode: {
+              hitDetectionRadius: 20,
+              simulatePressure: true,
+            },
+          }}
+          libraryReturnUrl="https://libraries.excalidraw.com"
         />
       </div>
     </div>
