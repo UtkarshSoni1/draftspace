@@ -11,10 +11,13 @@ interface RouteParams {
 // GET /api/boards/[id] - Fetch a single board by ID
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params;
+    const { id: rawId } = await params;
+    
+    // URL decode the ID in case it has encoded characters like %20
+    const id = decodeURIComponent(rawId);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: 'Invalid board ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Board not found' }, { status: 404 });
     }
 
     await connectToDatabase();
@@ -38,10 +41,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/boards/[id] - Update board
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params;
+    const { id: rawId } = await params;
+    
+    // URL decode the ID in case it has encoded characters like %20
+    const id = decodeURIComponent(rawId);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: 'Invalid board ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Board not found' }, { status: 404 });
     }
 
     await connectToDatabase();
@@ -98,10 +104,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/boards/[id] - Delete board
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params;
+    const { id: rawId } = await params;
+    
+    // URL decode the ID in case it has encoded characters like %20
+    const id = decodeURIComponent(rawId);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: 'Invalid board ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Board not found' }, { status: 404 });
     }
 
     await connectToDatabase();

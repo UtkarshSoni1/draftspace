@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SettingsPanel, type AIProvider } from '@/components/SettingsPanel';
 import { CommandInput } from '@/components/CommandInput';
 import ToastContainer from '@/components/ToastNotification';
@@ -62,8 +62,12 @@ const defaultSettings: PersistedSettings = {
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const [hydrated, setHydrated] = useState(false);
+
+  // Get board ID from URL query parameter
+  const boardIdFromUrl = searchParams.get('board');
 
   // Board state
   const [boardTitle, setBoardTitle] = useState('Untitled Board');
@@ -71,9 +75,9 @@ export default function Home() {
   const [canvasData, setCanvasData] = useState<any>(null);
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
 
-  // Board sync hook
-  const { saveBoard, loadingBoard, savingBoard, saveError, lastSavedTime } = useBoardSync(
-    boardTitle,
+  // Board sync hook - pass board ID from URL, not the title
+  const { saveBoard, loadingBoard, savingBoard, saveError, lastSavedTime, boardData } = useBoardSync(
+    boardIdFromUrl || undefined,
     canvasData,
     session?.user?.id
   );
@@ -134,6 +138,13 @@ export default function Home() {
     }
     setHydrated(true);
   }, []);
+
+  // Update board title when board data is loaded
+  useEffect(() => {
+    if (boardData?.title) {
+      setBoardTitle(boardData.title);
+    }
+  }, [boardData]);
 
   // Save settings to localStorage
   useEffect(() => {
