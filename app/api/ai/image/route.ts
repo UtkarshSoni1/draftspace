@@ -13,8 +13,13 @@ import {
 
 export const runtime = "nodejs";
 
-/** Nano Banana 2 — Gemini native image generation */
-const NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview";
+/**
+ * Gemini native image generation model.
+ * gemini-2.5-flash-image  = stable "Nano Banana" – best free-tier quota.
+ * gemini-3.1-flash-image-preview = "Nano Banana 2" – preview, lower RPM limits.
+ */
+const IMAGE_MODEL = "gemini-2.5-flash-image";
+
 
 const bodySchema = z.object({
   prompt: z.string().min(1, "prompt is required").max(32_000),
@@ -55,13 +60,13 @@ export async function OPTIONS(): Promise<Response> {
 export async function POST(request: NextRequest): Promise<Response> {
   logAiRequest("image", request);
 
-  const limited = checkRateLimit(request);
+  const limited = checkRateLimit(request, "image");
   if (!limited.ok) {
     return jsonResponse(
       {
         success: false,
         data: "",
-        error: "Too many requests. Limit is 10 per minute.",
+        error: "Too many requests. Please try again in a moment.",
       },
       {
         status: 429,
@@ -109,7 +114,27 @@ export async function POST(request: NextRequest): Promise<Response> {
   const { prompt, size } = parsed.data;
   const { aspectRatio, imageSize } = parseImageSize(size);
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${NANO_BANANA_MODEL}:generateContent`;
+  const requestBody = {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ],
+    generationConfig: {
+      responseModalities: ["TEXT", "IMAGE"],
+      // aspectRatio MUST be nested inside imageConfig — NOT a top-level
+      // generationConfig key. Passing it at the top level is silently ignored
+      // by the API, resulting in text-only or malformed responses.
+      imageConfig: {
+        aspectRatio,
+      },
+    },
+  };
+
+  console.log("[image] Gemini request:", JSON.stringify(requestBody).slice(0, 400));
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent`;
 
   let res: Response;
   try {
@@ -119,52 +144,40 @@ export async function POST(request: NextRequest): Promise<Response> {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: {
-            aspectRatio,
-            imageSize,
-          },
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Network error calling Gemini.";
+    console.error("[image] fetch error:", msg);
     return jsonResponse(
-      { success: false, data: "", error: msg },
+      { success: false, data: "", error: `Network error: ${msg}` },
       { status: 502 }
     );
   }
 
+  // Always parse the body first — error responses also carry a JSON body.
   let body: GenerateContentResponse;
   try {
     body = (await res.json()) as GenerateContentResponse;
   } catch {
+    console.error("[image] Non-JSON Gemini response:", res.status, res.statusText);
     return jsonResponse(
-      { success: false, data: "", error: "Invalid response from Gemini." },
+      { success: false, data: "", error: "Invalid response from Gemini API." },
       { status: 502 }
     );
   }
 
   if (!res.ok) {
-    const apiMsg =
-      parseGoogleApiError(body) ?? body.error?.message ?? res.statusText;
-    const { status, clientMessage } = classifyGeminiFailure(
-      apiMsg,
-      res.status
-    );
+    const rawMsg = parseGoogleApiError(body) ?? body.error?.message ?? res.statusText;
+    console.error("[image] Gemini error:", res.status, rawMsg, JSON.stringify(body).slice(0, 800));
+    const { status, clientMessage } = classifyGeminiFailure(rawMsg, res.status);
     return jsonResponse(
       { success: false, data: "", error: clientMessage },
       { status }
     );
   }
+
+  console.log("[image] Gemini raw parts count:", body.candidates?.[0]?.content?.parts?.length ?? 0);
 
   const parts = body.candidates?.[0]?.content?.parts ?? [];
   for (const part of parts) {
@@ -177,7 +190,8 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const textFallback = parts.map((p) => p.text).filter(Boolean).join("\n");
   const detail = textFallback?.trim()
-    ? `Model returned text instead of an image: ${textFallback.slice(0, 500)}`
-    : "No image data in the model response.";
+    ? `Model returned text instead of image: ${textFallback.slice(0, 500)}`
+    : "No image data returned. Check server logs for details.";
+  console.warn("[image] No image in response. Parts:", JSON.stringify(parts).slice(0, 300));
   return jsonResponse({ success: false, data: "", error: detail }, { status: 422 });
 }

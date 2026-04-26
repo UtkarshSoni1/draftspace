@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SettingsPanel, type AIProvider } from '@/components/SettingsPanel';
+import type { AIProvider } from '@/components/SettingsPanel';
 import { CommandInput } from '@/components/CommandInput';
 import ToastContainer from '@/components/ToastNotification';
 import PropertiesPanel from '@/components/PropertiesPanel';
@@ -76,17 +76,19 @@ export default function HomeContent() {
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
 
   // Board sync hook - pass board ID from URL, not the title
-  const { saveBoard, loadingBoard, savingBoard, saveError, lastSavedTime, boardData } = useBoardSync(
-    boardIdFromUrl || undefined,
-    canvasData,
-    session?.user?.id
-  );
+  const {
+    saveBoard,
+    isLoading: loadingBoard,
+    isSaving: savingBoard,
+    error: saveError,
+    lastSaved: lastSavedTime,
+    boardData,
+  } = useBoardSync(boardIdFromUrl || null);
 
   // Settings state
   const [activeTool, setActiveTool] = useState<ToolType>(defaultSettings.activeTool);
   const [strokeColor, setStrokeColor] = useState(defaultSettings.color);
   const [strokeWidth, setStrokeWidth] = useState(defaultSettings.strokeWidth);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiProvider, setAIProvider] = useState<AIProvider>(defaultSettings.aiProvider);
   const [apiKey, setApiKey] = useState(defaultSettings.apiKey);
   const [gridEnabled, setGridEnabled] = useState(defaultSettings.gridEnabled);
@@ -350,28 +352,6 @@ export default function HomeContent() {
         className="flex-1 min-h-0 relative w-full h-full flex items-center justify-between"
         style={{ marginTop: '56px' }}
       >
-        {/* Settings Panel */}
-        <div className="absolute top-4 right-4 z-40">
-          <SettingsPanel
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-            aiProvider={aiProvider}
-            onAIProviderChange={setAIProvider}
-            apiKey={apiKey}
-            onAPIKeyChange={setApiKey}
-            gridEnabled={gridEnabled}
-            onGridToggle={setGridEnabled}
-            snapToGridEnabled={snapToGridEnabled}
-            onSnapToGrid={setSnapToGridEnabled}
-            darkModeEnabled={darkMode}
-            onDarkModeToggle={setDarkMode}
-            exportBackgroundEnabled={exportBackgroundEnabled}
-            onExportBackgroundToggle={setExportBackgroundEnabled}
-            exportScale={exportScale}
-            onExportScaleChange={setExportScale}
-          />
-        </div>
-
         {/* Socials Pill */}
         <SocialsPill />
 

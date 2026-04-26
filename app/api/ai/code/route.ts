@@ -33,14 +33,14 @@ export async function OPTIONS(): Promise<Response> {
 export async function POST(request: NextRequest): Promise<Response> {
   logAiRequest("code", request);
 
-  const limited = checkRateLimit(request);
+  const limited = checkRateLimit(request, "text");
   if (!limited.ok) {
     return jsonResponse(
       {
         success: false,
         data: "",
         language: "",
-        error: "Too many requests. Limit is 10 per minute.",
+        error: "Too many requests. Please try again in a moment.",
       },
       {
         status: 429,

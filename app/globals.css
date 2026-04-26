@@ -96,6 +96,25 @@ html, body {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Dark mode brand overrides */
+html.dark,
+html.dark body {
+  background-color: #1C1A17;
+  color: #E8DDB5;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #252320;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3D3B35;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9CA764;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

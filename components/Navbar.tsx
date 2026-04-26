@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { Logo } from './Logo';
-import { Wifi, WifiOff } from 'lucide-react';
 
 interface NavbarProps {
   title?: string;
@@ -48,7 +47,7 @@ export function Navbar({
         <Logo size="sm" />
       </div>
 
-      {/* Center: Board title input */}
+      {/* Center: Board title */}
       <div className="flex-1 min-w-0 flex justify-center px-4">
         {isEditing ? (
           <input
@@ -57,16 +56,11 @@ export function Navbar({
             onChange={(e) => setBoardTitle(e.target.value)}
             onBlur={handleTitleBlur}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleTitleBlur();
-              }
+              if (e.key === 'Enter') handleTitleBlur();
             }}
             autoFocus
             className="text-center text-sm font-medium bg-transparent border-0 outline-none max-w-xs"
-            style={{
-              color: '#5C4A2A',
-              borderBottom: '1px solid #9CA764',
-            }}
+            style={{ color: '#5C4A2A', borderBottom: '1px solid #9CA764' }}
           />
         ) : (
           <button
@@ -79,9 +73,8 @@ export function Navbar({
         )}
       </div>
 
-      {/* Right: Status, Avatar, Sign in */}
+      {/* Right: Status, Avatar */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        {/* Connection status */}
         <div
           className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium"
           style={{
@@ -90,19 +83,12 @@ export function Navbar({
           }}
         >
           {isConnected ? (
-            <>
-              <span>●</span>
-              <span>Live</span>
-            </>
+            <><span>●</span><span>Live</span></>
           ) : (
-            <>
-              <span>○</span>
-              <span>Offline</span>
-            </>
+            <><span>○</span><span>Offline</span></>
           )}
         </div>
 
-        {/* User avatar or sign in */}
         {session ? (
           <div
             className="flex items-center justify-center w-8 h-8 rounded-full text-white font-semibold text-sm"
@@ -114,11 +100,8 @@ export function Navbar({
         ) : (
           <button
             onClick={() => signIn()}
-            className="px-3 py-1 text-sm font-medium rounded-lg border transition-all hover:bg-opacity-10"
-            style={{
-              color: '#5C4A2A',
-              borderColor: '#9CA764',
-            }}
+            className="px-3 py-1 text-sm font-medium rounded-lg border transition-all"
+            style={{ color: '#5C4A2A', borderColor: '#9CA764' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#9CA764';
               e.currentTarget.style.color = 'white';

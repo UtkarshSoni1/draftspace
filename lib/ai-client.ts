@@ -95,18 +95,34 @@ export async function callImageAi(
   prompt: string,
   size?: string
 ): Promise<AiImageResult> {
-  const res = await fetch("/api/ai/image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, size }),
-  });
-  const j = (await res.json()) as AiImageResult;
-  if (!res.ok) {
+  let res: Response;
+  try {
+    res = await fetch("/api/ai/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, size }),
+    });
+  } catch (e) {
     return {
       success: false,
       data: "",
-      error: j.error ?? res.statusText,
+      error: e instanceof Error ? e.message : "Network error reaching image API.",
     };
+  }
+
+  let j: AiImageResult;
+  try {
+    j = (await res.json()) as AiImageResult;
+  } catch {
+    return {
+      success: false,
+      data: "",
+      error: `Image API returned non-JSON response (HTTP ${res.status}).`,
+    };
+  }
+
+  if (!res.ok) {
+    return { success: false, data: "", error: j.error ?? res.statusText };
   }
   return j;
 }

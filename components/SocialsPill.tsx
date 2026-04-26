@@ -53,7 +53,7 @@ export function SocialsPill() {
   return (
     <div
       ref={containerRef}
-      className="fixed bottom-5 right-5 z-50"
+      className="fixed bottom-16 right-4 z-50"
       onMouseLeave={handleMouseLeave}
     >
       {/* Closed Pill State */}

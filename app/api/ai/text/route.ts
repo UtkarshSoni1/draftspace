@@ -26,13 +26,13 @@ export async function OPTIONS(): Promise<Response> {
 export async function POST(request: NextRequest): Promise<Response> {
   logAiRequest("text", request);
 
-  const limited = checkRateLimit(request);
+  const limited = checkRateLimit(request, "text");
   if (!limited.ok) {
     return jsonResponse(
       {
         success: false,
         data: "",
-        error: "Too many requests. Limit is 10 per minute.",
+        error: "Too many requests. Please try again in a moment.",
       },
       {
         status: 429,
@@ -93,11 +93,31 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const { status, clientMessage } = classifyGeminiFailure(msg);
-    return jsonResponse(
-      { success: false, data: "", error: clientMessage },
-      { status }
-    );
+    console.warn("[ai:text] stream init failed, falling back to non-stream:", msg);
+
+    try {
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+      const text = result.response.text()?.trim();
+
+      if (!text) {
+        return jsonResponse(
+          { success: false, data: "", error: "Empty response from model." },
+          { status: 502 }
+        );
+      }
+
+      return jsonResponse({ success: true, data: text });
+    } catch (fallbackError) {
+      const fallbackMsg =
+        fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+      const { status, clientMessage } = classifyGeminiFailure(fallbackMsg);
+      return jsonResponse(
+        { success: false, data: "", error: clientMessage },
+        { status }
+      );
+    }
   }
 
   const encoder = new TextEncoder();

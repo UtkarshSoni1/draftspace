@@ -119,24 +119,34 @@ export function selectElement(api: ExcalidrawImperativeAPI, elementId: string): 
 
 /**
  * Loads image bytes from a URL or data URL and returns a data URL for Excalidraw.
+ * Handles data: URLs directly without fetching (Gemini returns base64 data URLs).
  */
 async function loadImageAsDataURL(url: string): Promise<{
   dataURL: string;
   mimeType: string;
 }> {
+  // Already a data URL — use it directly
+  if (url.startsWith('data:')) {
+    const mimeMatch = url.match(/^data:([^;]+);/);
+    const mimeType = mimeMatch?.[1] ?? 'image/png';
+    return { dataURL: url, mimeType };
+  }
+
+  // Remote URL — fetch and convert to object URL
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const res = await fetch(url, { mode: 'cors' });
     if (!res.ok) {
       throw new Error(`Failed to fetch image: ${res.status} ${res.statusText}`);
     }
     const blob = await res.blob();
-    const mimeType = blob.type || "image/png";
+    const mimeType = blob.type || 'image/png';
     const dataURL = URL.createObjectURL(blob);
     return { dataURL, mimeType };
   } catch (e) {
     throw e instanceof Error ? e : new Error(`Failed to load image: ${String(e)}`);
   }
 }
+
 
 /**
  * Reads intrinsic image size from a data URL for layout.
@@ -194,6 +204,20 @@ export async function addAITextToCanvas(
 }
 
 /**
+ * Converts a blob: URL to a base64 data URL.
+ */
+async function blobUrlToDataURL(blobUrl: string, mimeType: string): Promise<string> {
+  const res = await fetch(blobUrl);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
  * Adds an image element to the canvas via data URL.
  *
  * @param api - Excalidraw imperative API
@@ -211,8 +235,13 @@ export async function addAIImageToCanvas(
 ): Promise<string> {
   try {
     const converter = await ensureExcalidraw();
-    const { dataURL, mimeType } = await loadImageAsDataURL(imageUrl);
-    
+    let { dataURL, mimeType } = await loadImageAsDataURL(imageUrl);
+
+    // Excalidraw addFiles requires a base64 data URL, not a blob: URL
+    if (dataURL.startsWith('blob:')) {
+      dataURL = await blobUrlToDataURL(dataURL, mimeType);
+    }
+
     const { width: iw, height: ih } = await measureImageSize(dataURL);
     let w = iw;
     let h = ih;
@@ -226,46 +255,43 @@ export async function addAIImageToCanvas(
     const offsetX = -w / 2;
     const offsetY = -h / 2;
 
-    // Generate a unique file ID
-    const fileId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a stable file ID (Excalidraw uses this to link element → file)
+    const fileId = `ai-img-${Date.now()}` as unknown as FileId;
 
-    // Add file to Excalidraw
-    try {
-      api.addFiles?.(
-        [
-          {
-            id: fileId,
-            dataURL: dataURLToString(dataURL),
-            mimeType,
-            created: Date.now(),
-          },
-        ] as any
-      );
-    } catch (e) {
-      console.warn("[canvasManager] Failed to register file, continuing with element:", e);
-    }
+    // Register the file with Excalidraw BEFORE creating the element
+    api.addFiles([
+      {
+        id: fileId,
+        dataURL: dataURL as DataURL,
+        mimeType: mimeType as keyof typeof IMAGE_MIME_TYPES,
+        created: Date.now(),
+        lastRetrieved: Date.now(),
+      },
+    ]);
 
     const [imageEl] = converter(
       [
         {
-          type: "image",
+          type: 'image',
           x: pos.x + offsetX,
           y: pos.y + offsetY,
           width: w,
           height: h,
           fileId,
+          status: 'saved',
         } as any,
       ],
-      { regenerateIds: true }
+      { regenerateIds: false } // keep our fileId reference intact
     );
 
     mergeIntoScene(api, [imageEl]);
-    return imageEl.id || "image-element";
+    return imageEl.id || 'image-element';
   } catch (e) {
-    console.error("[canvasManager] addAIImageToCanvas failed:", e);
+    console.error('[canvasManager] addAIImageToCanvas failed:', e);
     throw e instanceof Error ? e : new Error(String(e));
   }
 }
+
 
 /** Map common language names to a label tint (syntax-highlighting simulation). */
 function languageToTint(language: string): string {
