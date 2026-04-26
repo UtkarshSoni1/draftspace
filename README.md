@@ -15,13 +15,14 @@
 
 ---
 
-![VERSION](https://img.shields.io/badge/VERSION-1.0.0-white?style=flat-square)
-![WEB](https://img.shields.io/badge/WEB-LIVE-blue?style=flat-square)
-![AI](https://img.shields.io/badge/🤖_AI-CLAUDE_+_GEMINI-white?style=flat-square)
-![FRONTEND](https://img.shields.io/badge/⚛️_FRONTEND-NEXT.JS_14-white?style=flat-square)
-![DATABASE](https://img.shields.io/badge/🍃_DATABASE-MONGODB_ATLAS-white?style=flat-square)
-![REALTIME](https://img.shields.io/badge/⚡_REALTIME-SOCKET.IO-white?style=flat-square)
-![DEPLOYED ON](https://img.shields.io/badge/🚀_DEPLOYED_ON-RAILWAY-white?style=flat-square)
+![AI](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
+![AI](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)
+![Next JS](https://img.shields.io/badge/next%20js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![NPM](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)
+![ShadCN](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![DATABASE](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 
 </div>
 
@@ -49,7 +50,7 @@
 
 <div align="center">
 
-[**TRY IT LIVE →**](https://your-app.railway.app) &nbsp;&nbsp; [**VIEW ON GITHUB →**](https://github.com/yourusername/draftspace) &nbsp;&nbsp; [**REPORT A BUG →**](https://github.com/yourusername/draftspace/issues)
+[**VIEW ON GITHUB →**](https://github.com/yourusername/draftspace) &nbsp;&nbsp; [**REPORT A BUG →**](https://github.com/yourusername/draftspace/issues)
 
 </div>
 
@@ -90,7 +91,7 @@ Commands are detected when you press Enter or click away. The parser sends match
 **1. Open it in your browser**
 
 ```
-https://your-app.railway.app
+coming soon.........
 ```
 
 The canvas loads immediately. No account required. Type `{ ai: hello }` anywhere on the canvas and press Enter.
@@ -156,8 +157,7 @@ DraftSpace/
 │   └── models/                      Mongoose schemas (User, Canvas)
 │
 ├── server.js                     🔌  Custom Node server — Next.js + Socket.io
-├── middleware.ts                     Auth protection for dashboard routes
-└── render.yaml                   ☁️  Railway deployment config
+└── middleware.ts                     Auth protection for dashboard routes
 ```
 
 ---
@@ -176,16 +176,17 @@ DraftSpace/
 | Database | MongoDB Atlas + Mongoose |
 | Real-time | Socket.io 4.x via custom server.js |
 | State | Zustand |
-| Deployment | Railway (Node.js — Socket.io compatible) |
+| Deployment | coming soon |
 
 ---
 
 <div align="center">
+<img src="https://github.com/utkarshsoni1.png" width="52" height="52" style="border-radius:50%;" alt="Utkarsh Soni" />
+  
+Built by **[Utkarsh Soni](https://github.com/UtkarshSoni1)**
 
-Built by **Utkarsh**
+*If you found this helpful or cool, feel free to drop a star ⭐*
 
-*If it was useful or interesting, a star is always appreciated.*
-
-[![Star on GitHub](https://img.shields.io/github/stars/yourusername/draftspace?style=social)](https://github.com/yourusername/draftspace)
+[![Star on GitHub](https://img.shields.io/github/stars/utkarshsoni1/draftspace?style=for-the-badge&color=0f0f0f&labelColor=f0f0f0&label=★%20Star%20on%20GitHub)](https://github.com/utkarshsoni1/draftspace)
 
 </div>
