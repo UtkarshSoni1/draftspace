@@ -1,3 +1,5 @@
+import { getPersistedGeminiImageApiKey } from "@/lib/draftspace-settings";
+
 export type AiTextResult = { success: boolean; data: string; error?: string };
 
 export type AiImageResult = {
@@ -13,8 +15,7 @@ export type AiCodeResult = {
   error?: string;
 };
 
-/** Parses SSE from POST /api/ai/text — chunks then final { success, data } */
-export async function streamTextAi(
+/** Parses SSE from POST /api/ai/text — chunks then final { success, data } */export async function streamTextAi(
   prompt: string,
   maxTokens?: number,
   onChunk?: (chunk: string) => void
@@ -93,16 +94,25 @@ export async function streamTextAi(
 
 export async function callImageAi(
   prompt: string,
-  size?: string
+  size?: string,
+  options?: { geminiApiKey?: string }
 ): Promise<AiImageResult> {
+  const userKey =
+    options?.geminiApiKey?.trim() || getPersistedGeminiImageApiKey();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (userKey) {
+    headers["X-Gemini-Api-Key"] = userKey;
+  }
+
   let res: Response;
   try {
     res = await fetch("/api/ai/image", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ prompt, size }),
-    });
-  } catch (e) {
+    });  } catch (e) {
     return {
       success: false,
       data: "",

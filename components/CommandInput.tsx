@@ -19,6 +19,9 @@ interface CommandInputProps {
   onSubmit?: (command: string) => void | Promise<void>;
   onPatternDetected?: (pattern: 'ai' | 'img' | 'code', value: string) => void;
   excalidrawAPI?: ExcalidrawImperativeAPI;
+  /** Optional user Gemini key for `{ img: }` (saved in browser by parent). */
+  geminiImageApiKey?: string;
+  onGeminiImageApiKeyChange?: (value: string) => void;
 }
 
 interface CommandOption {
@@ -69,7 +72,12 @@ function parseCommand(input: string): ParsedCommand {
   return { kind, prompt };
 }
 
-export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
+export function CommandInput({
+  onSubmit,
+  excalidrawAPI,
+  geminiImageApiKey = '',
+  onGeminiImageApiKeyChange,
+}: CommandInputProps) {
   const { addToast, removeToast } = useToast();
   const [input, setInput] = useState('');
   const [showPopover, setShowPopover] = useState(false);
@@ -167,7 +175,9 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
         }
 
         if (parsed.kind === 'img') {
-          const result = await callImageAi(parsed.prompt);
+          const result = await callImageAi(parsed.prompt, undefined, {
+            geminiApiKey: geminiImageApiKey.trim() || undefined,
+          });
           removeToast(toastId);
           if (!result.success) {
             addToast({
@@ -239,7 +249,7 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
         });
       }
     },
-    [addToast, removeToast, excalidrawAPI]
+    [addToast, removeToast, excalidrawAPI, geminiImageApiKey]
   );
 
   const handleSubmit = async () => {
@@ -396,6 +406,43 @@ export function CommandInput({ onSubmit, excalidrawAPI }: CommandInputProps) {
             </button>
           </div>
         </div>
+
+        <details
+          className="mt-2 rounded-xl px-3 py-2 text-xs"
+          style={{
+            backgroundColor: 'rgba(253, 250, 243, 0.96)',
+            border: '1px solid #E8DDB5',
+          }}
+        >
+          <summary
+            className="cursor-pointer select-none font-medium"
+            style={{ color: '#5C4A2A' }}
+          >
+            Gemini API key for images (optional)
+          </summary>
+          <p
+            className="mt-2 mb-2 leading-relaxed opacity-80"
+            style={{ color: '#5C4A2A' }}
+          >
+            Stored only in this browser. When set,{' '}
+            <span className="font-mono">{`{ img: ... }`}</span> uses your key instead of the
+            server&apos;s.
+          </p>
+          <input
+            type="password"
+            autoComplete="off"
+            value={geminiImageApiKey}
+            onChange={(e) => onGeminiImageApiKeyChange?.(e.target.value)}
+            placeholder="Paste Gemini API key (AIza…)"
+            className="w-full rounded-lg border px-3 py-2 font-mono text-xs outline-none focus:ring-1"
+            style={{
+              borderColor: '#E8DDB5',
+              color: '#5C4A2A',
+              backgroundColor: '#FDFAF3',
+            }}
+            aria-label="Optional Gemini API key for image generation"
+          />
+        </details>
       </div>
     </div>
   );

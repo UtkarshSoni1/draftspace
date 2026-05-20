@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { AIProvider } from '@/components/SettingsPanel';
+import { DRAFTSPACE_SETTINGS_KEY } from '@/lib/draftspace-settings';
 import { CommandInput } from '@/components/CommandInput';
 import ToastContainer from '@/components/ToastNotification';
 import PropertiesPanel from '@/components/PropertiesPanel';
@@ -16,7 +17,7 @@ import { SocialsPill } from '@/components/SocialsPill';
 import { useBoardSync } from '@/hooks/useBoardSync';
 import { useToast } from '@/context/ToastContext';
 
-const STORAGE_KEY = 'draftspace-settings';
+const STORAGE_KEY = DRAFTSPACE_SETTINGS_KEY;
 
 type SelectedShape = {
   id: string;
@@ -39,6 +40,8 @@ type PersistedSettings = {
   strokeWidth: number;
   aiProvider: AIProvider;
   apiKey: string;
+  /** Optional Gemini key for `{ img: }` (stored only in this browser). */
+  geminiImageApiKey: string;
   gridEnabled: boolean;
   snapToGridEnabled: boolean;
   darkMode: boolean;
@@ -52,6 +55,7 @@ const defaultSettings: PersistedSettings = {
   strokeWidth: 2,
   aiProvider: 'openai',
   apiKey: '',
+  geminiImageApiKey: '',
   gridEnabled: false,
   snapToGridEnabled: false,
   darkMode: false,
@@ -91,6 +95,9 @@ export default function HomeContent() {
   const [strokeWidth, setStrokeWidth] = useState(defaultSettings.strokeWidth);
   const [aiProvider, setAIProvider] = useState<AIProvider>(defaultSettings.aiProvider);
   const [apiKey, setApiKey] = useState(defaultSettings.apiKey);
+  const [geminiImageApiKey, setGeminiImageApiKey] = useState(
+    defaultSettings.geminiImageApiKey
+  );
   const [gridEnabled, setGridEnabled] = useState(defaultSettings.gridEnabled);
   const [snapToGridEnabled, setSnapToGridEnabled] = useState(defaultSettings.snapToGridEnabled);
   const [darkMode, setDarkMode] = useState(defaultSettings.darkMode);
@@ -128,6 +135,7 @@ export default function HomeContent() {
         if (typeof s.strokeWidth === 'number') setStrokeWidth(s.strokeWidth);
         if (s.aiProvider) setAIProvider(s.aiProvider);
         if (typeof s.apiKey === 'string') setApiKey(s.apiKey);
+        if (typeof s.geminiImageApiKey === 'string') setGeminiImageApiKey(s.geminiImageApiKey);
         if (typeof s.gridEnabled === 'boolean') setGridEnabled(s.gridEnabled);
         if (typeof s.snapToGridEnabled === 'boolean') setSnapToGridEnabled(s.snapToGridEnabled);
         if (typeof s.darkMode === 'boolean') setDarkMode(s.darkMode);
@@ -157,6 +165,7 @@ export default function HomeContent() {
       strokeWidth,
       aiProvider,
       apiKey,
+      geminiImageApiKey,
       gridEnabled,
       snapToGridEnabled,
       darkMode,
@@ -175,6 +184,7 @@ export default function HomeContent() {
     strokeWidth,
     aiProvider,
     apiKey,
+    geminiImageApiKey,
     gridEnabled,
     snapToGridEnabled,
     darkMode,
@@ -379,6 +389,8 @@ export default function HomeContent() {
         onSubmit={handleCommandLog}
         onPatternDetected={handlePatternDetected}
         excalidrawAPI={excalidrawAPI}
+        geminiImageApiKey={geminiImageApiKey}
+        onGeminiImageApiKeyChange={setGeminiImageApiKey}
       />
 
       {/* Toast Container */}

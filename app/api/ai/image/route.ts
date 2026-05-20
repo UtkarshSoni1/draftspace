@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { GoogleGenAI } from "@google/genai";
 import { parseImageSize } from "@/lib/api/image-config";
 import {
   AI_CORS_HEADERS,
@@ -8,7 +9,6 @@ import {
   formatZodError,
   jsonResponse,
   logAiRequest,
-  parseGoogleApiError,
 } from "@/lib/api/ai-shared";
 
 export const runtime = "nodejs";
@@ -18,12 +18,14 @@ export const runtime = "nodejs";
  * gemini-2.5-flash-image  = stable "Nano Banana" – best free-tier quota.
  * gemini-3.1-flash-image-preview = "Nano Banana 2" – preview, lower RPM limits.
  */
-const IMAGE_MODEL = "gemini-2.5-flash-image";
+const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
 
 
 const bodySchema = z.object({
   prompt: z.string().min(1, "prompt is required").max(32_000),
   size: z.string().max(64).optional(),
+  /** Optional user Gemini key (same-origin apps may also send `X-Gemini-Api-Key`). */
+  geminiApiKey: z.string().max(512).optional(),
 });
 
 type Part = {
@@ -99,78 +101,43 @@ export async function POST(request: NextRequest): Promise<Response> {
     );
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey?.trim()) {
+  const headerKey = request.headers.get("x-gemini-api-key")?.trim();
+  const bodyKey = parsed.data.geminiApiKey?.trim();
+  const userApiKey = headerKey || bodyKey || "";
+  const serverApiKey =
+    process.env.GEMINI_API_KEY_IMAGE ?? process.env.GEMINI_API_KEY ?? "";
+  const apiKey = userApiKey || serverApiKey;
+  if (!apiKey) {
     return jsonResponse(
       {
         success: false,
         data: "",
-        error: "Server misconfiguration: GEMINI_API_KEY is not set.",
+        error:
+          "No Gemini API key: set GEMINI_API_KEY_IMAGE or GEMINI_API_KEY on the server, or add your key under the command bar (Gemini image key) or send header X-Gemini-Api-Key / body field geminiApiKey.",
       },
-      { status: 500 }
+      { status: 400 }
     );
   }
 
   const { prompt, size } = parsed.data;
-  const { aspectRatio, imageSize } = parseImageSize(size);
+  const { aspectRatio } = parseImageSize(size);
+  const ai = new GoogleGenAI({ apiKey });
 
-  const requestBody = {
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: prompt }],
-      },
-    ],
-    generationConfig: {
-      responseModalities: ["TEXT", "IMAGE"],
-      // aspectRatio MUST be nested inside imageConfig — NOT a top-level
-      // generationConfig key. Passing it at the top level is silently ignored
-      // by the API, resulting in text-only or malformed responses.
-      imageConfig: {
-        aspectRatio,
-      },
-    },
-  };
+  const promptWithRatio =
+    aspectRatio && aspectRatio !== "1:1"
+      ? `${prompt}\n\nAspect ratio: ${aspectRatio}`
+      : prompt;
 
-  console.log("[image] Gemini request:", JSON.stringify(requestBody).slice(0, 400));
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent`;
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify(requestBody),
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Network error calling Gemini.";
-    console.error("[image] fetch error:", msg);
-    return jsonResponse(
-      { success: false, data: "", error: `Network error: ${msg}` },
-      { status: 502 }
-    );
-  }
-
-  // Always parse the body first — error responses also carry a JSON body.
   let body: GenerateContentResponse;
   try {
-    body = (await res.json()) as GenerateContentResponse;
-  } catch {
-    console.error("[image] Non-JSON Gemini response:", res.status, res.statusText);
-    return jsonResponse(
-      { success: false, data: "", error: "Invalid response from Gemini API." },
-      { status: 502 }
-    );
-  }
-
-  if (!res.ok) {
-    const rawMsg = parseGoogleApiError(body) ?? body.error?.message ?? res.statusText;
-    console.error("[image] Gemini error:", res.status, rawMsg, JSON.stringify(body).slice(0, 800));
-    const { status, clientMessage } = classifyGeminiFailure(rawMsg, res.status);
+    body = (await ai.models.generateContent({
+      model: IMAGE_MODEL,
+      contents: promptWithRatio,
+    })) as GenerateContentResponse;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Error calling Gemini.";
+    console.error("[image] SDK error:", msg);
+    const { status, clientMessage } = classifyGeminiFailure(msg, 502);
     return jsonResponse(
       { success: false, data: "", error: clientMessage },
       { status }
